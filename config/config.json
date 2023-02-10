@@ -1,0 +1,29 @@
+{
+  "development": {
+    "username": "root",
+    "password": "dsjfklJFIJEWOFJKdjfli&34892342389&&eouo8fu832ofjoHUOISEDHEHFR(h3w8rhwse9f739haschasiu7&*#*&hiuefuwksdjfn",
+    "database": "bloxatdb",
+    "host": "localhost",
+    "port": "3306",
+    "dialect": "mysql",
+    "logging": true
+  },
+  "test": {
+    "username": "root",
+    "password": "dsjfklJFIJEWOFJKdjfli&34892342389&&eouo8fu832ofjoHUOISEDHEHFR(h3w8rhwse9f739haschasiu7&*#*&hiuefuwksdjfn",
+    "database": "bloxatdb",
+    "host": "localhost",
+    "port": "3306",
+    "dialect": "mysql",
+    "logging": true
+  },
+  "production": {
+    "username": "root",
+    "password": "dsjfklJFIJEWOFJKdjfli&34892342389&&eouo8fu832ofjoHUOISEDHEHFR(h3w8rhwse9f739haschasiu7&*#*&hiuefuwksdjfn",
+    "database": "bloxatdb",
+    "host": "localhost",
+    "port": "3306",
+    "dialect": "mysql",
+    "logging": true
+  }
+}
