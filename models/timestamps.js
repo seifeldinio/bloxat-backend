@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       seconds_duration: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         allowNull: false,
         validate: {
           notNull: {

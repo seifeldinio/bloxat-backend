@@ -13,7 +13,7 @@ module.exports = {
         allowNull: false,
       },
       seconds_duration: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.FLOAT,
         allowNull: false,
         validate: {
           notNull: {

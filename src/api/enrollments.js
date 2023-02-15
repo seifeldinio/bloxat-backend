@@ -197,15 +197,85 @@ router.get(
     const courseId = req.params.course_id;
 
     //pagination
+    // let page = parseInt(req.query.page);
+    // let per_page = parseInt(req.query.per_page || 10);
+
+    // const offset = page ? page * per_page : 0;
+
+    try {
+      const usersReturn = await enrollments.findOne({
+        where: { user_id: userId, course_id: courseId },
+
+        //DONT SHOW HASH IN THE RESPONSE
+        attributes: {
+          exclude: ["id", "role", "createdAt", "updatedAt"],
+        },
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // console.log(err);
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
+// [GET] ENROLLMENTS OF A COURSE WITH COURSE ID
+
+router.get(
+  "/enrollment/:course_id",
+  // passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const courseId = req.params.course_id;
+
+    //pagination
     let page = parseInt(req.query.page);
     let per_page = parseInt(req.query.per_page || 10);
 
     const offset = page ? page * per_page : 0;
 
     try {
-      const usersReturn = await enrollments.findOne({
-        where: { user_id: userId, course_id: courseId },
+      const enrollReturn = await enrollments.findAndCountAll({
+        where: { course_id: courseId },
+        // pagination
+        limit: per_page,
+        offset: offset,
+        //DONT SHOW HASH IN THE RESPONSE
+        attributes: {
+          exclude: ["id", "role", "createdAt", "updatedAt"],
+        },
+      });
 
+      return res.json(enrollReturn);
+    } catch (err) {
+      // console.log(err);
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
+// [GET] ALL ENROLLMENTS
+router.get(
+  "/enrollments",
+  // passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    //pagination
+    let page = parseInt(req.query.page);
+    let per_page = parseInt(req.query.per_page || 10);
+
+    const offset = page ? page * per_page : 0;
+
+    try {
+      const usersReturn = await enrollments.findAndCountAll({
+        // pagination
+        limit: per_page,
+        offset: offset,
         //DONT SHOW HASH IN THE RESPONSE
         attributes: {
           exclude: ["id", "role", "createdAt", "updatedAt"],

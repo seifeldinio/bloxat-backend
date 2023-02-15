@@ -1,7 +1,7 @@
 const express = require("express");
 
 const router = express.Router();
-const { modules, courses, lessons, timestamps } = require("../../models");
+const { lessons, timestamps } = require("../../models");
 const passport = require("passport");
 
 // TIMESTAMPS

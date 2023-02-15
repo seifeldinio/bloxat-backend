@@ -203,4 +203,142 @@ router.put(
   }
 );
 
+// [GET] GET ALL USERS WITH COUNT
+router.get(
+  "/countUsers/",
+  // passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    //pagination
+    let page = parseInt(req.query.page);
+    let per_page = parseInt(req.query.per_page || 10);
+
+    const offset = page ? page * per_page : 0;
+
+    //search
+    let search = req.query.search || "";
+
+    try {
+      const usersReturn = await users.findAndCountAll({
+        // pagination
+        limit: per_page,
+        offset: offset,
+
+        //DONT SHOW HASH IN THE RESPONSE
+        attributes: {
+          exclude: ["hash", "player_id_app", "player_id_web"],
+        },
+        // condition and search
+        where: {
+          [Op.and]: [
+            {
+              is_admin: false,
+            },
+          ],
+          [Op.or]: [
+            { user_id: { [Op.like]: `%${search}%` } },
+            { first_name: { [Op.like]: `%${search}%` } },
+            { last_name: { [Op.like]: `%${search}%` } },
+            { email: { [Op.like]: `%${search}%` } },
+            { phone_number: { [Op.like]: `%${search}%` } },
+          ],
+        },
+        // Order from newest to oldest
+        order: [["createdAt", "DESC"]],
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // console.log(err);
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
+// [GET] GET ALL USERS WITH COUNT AND WITH THEIR ENROLLMENTS
+router.get(
+  "/countUsersEnrollments/",
+  // passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    //pagination
+    let page = parseInt(req.query.page);
+    let per_page = parseInt(req.query.per_page || 10);
+
+    const offset = page ? page * per_page : 0;
+
+    //search
+    let search = req.query.search || "";
+
+    try {
+      const usersReturn = await users.findAndCountAll({
+        // pagination
+        limit: per_page,
+        offset: offset,
+
+        //DONT SHOW HASH IN THE RESPONSE
+        attributes: {
+          exclude: ["hash", "player_id_app", "player_id_web"],
+        },
+        // condition and search
+        where: {
+          [Op.and]: [
+            {
+              is_admin: false,
+            },
+          ],
+          [Op.or]: [
+            { user_id: { [Op.like]: `%${search}%` } },
+            { first_name: { [Op.like]: `%${search}%` } },
+            { last_name: { [Op.like]: `%${search}%` } },
+            { email: { [Op.like]: `%${search}%` } },
+            { phone_number: { [Op.like]: `%${search}%` } },
+          ],
+        },
+        // Order from newest to oldest
+        order: [["createdAt", "DESC"]],
+        include: [
+          {
+            model: enrollments,
+            attributes: {
+              exclude: ["user_id", "updatedAt", "id"],
+            },
+
+            // include: [
+            //   {
+            //     model: lessons,
+            //     limit: 1,
+            //     attributes: {
+            //       exclude: [
+            //         "lesson_id",
+            //         "course_id",
+            //         "module_id",
+            //         "title",
+            //         "lesson_order",
+            //         "lesson_video_url",
+            //         "description",
+            //         "upsell_cta_title",
+            //         "upsell_cta_url",
+            //         "createdAt",
+            //         "updatedAt",
+            //       ],
+            //     },
+            //   },
+            // ],
+          },
+        ],
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // console.log(err);
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
 module.exports = router;

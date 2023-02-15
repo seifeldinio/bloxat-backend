@@ -20,20 +20,7 @@ const helmet = require("helmet");
 const http = require("http");
 var compression = require("compression");
 // Importing socket.io event handlers from socketController
-// const {
-//   updateProjectProgress,
-//   sendNotificationToUser,
-//   approveTaskRequest,
-//   updateTaskProgress,
-//   approveBugFixRequest,
-//   updateBugProgress,
-//   updatePaymentMethod,
-//   updateCountry,
-//   sendExpectedFeedbackToUser,
-//   addAppReleaseToUser,
-//   updateBugScreenshots,
-//   addCustomTask,
-// } = require("./controllers/socketController");
+const { sendNotificationToUser } = require("./controllers/socketController");
 
 // Creating a server to use socket.io
 const server = http.createServer(app);
@@ -71,12 +58,34 @@ app.use(middlewares.errorHandler);
 //Settings
 // socket.io connections
 io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.id}`);
+  // console.log(`User connected: ${socket.id}`);
+
+  // Listen when someone emits an event "join_room" to join a room passing their user_id
+  socket.on("join_room", () => {
+    socket.join("public");
+    // SEND NOTIFICATION EVENT
+    socket.on(
+      "send_notification_to_user",
+      (title, body, route, from_name, from_profile_pic, type, cb) => {
+        sendNotificationToUser(
+          socket,
+
+          title,
+          body,
+          route,
+          from_name,
+          from_profile_pic,
+          type,
+          cb
+        );
+      }
+    );
+  });
 
   // Socket disconnected
   socket.on("disconnect", () => {
     // Closing the frontend (Closing browser/ Closing the tab)
-    console.log("User disconnected", socket.id);
+    // console.log("User disconnected", socket.id);
   });
 });
 

@@ -3,9 +3,9 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 
-const { courses, modules, lessons, enrollments } = require("../../models");
+const { courses, modules } = require("../../models");
 
-const { Op } = require("sequelize");
+// const { Op } = require("sequelize");
 
 //COURSES
 // [POST] CREATE COURSE
@@ -58,7 +58,7 @@ router.get(
     const offset = page ? page * per_page : 0;
 
     //search
-    let search = req.query.search || "";
+    // let search = req.query.search || "";
 
     try {
       const coursesReturn = await courses.findAll({
@@ -91,7 +91,7 @@ router.get(
     const offset = page ? page * per_page : 0;
 
     //search
-    let search = req.query.search || "";
+    // let search = req.query.search || "";
 
     try {
       //FINALL -> ALL PROJECTS .. PLACE CONDITION INSIDE FOR FILTERS
@@ -128,10 +128,10 @@ router.get(
 
   async (req, res) => {
     //pagindation
-    let page = parseInt(req.query.page);
-    let per_page = parseInt(req.query.per_page || 10);
+    // let page = parseInt(req.query.page);
+    // let per_page = parseInt(req.query.per_page || 10);
 
-    const offset = page ? page * per_page : 0;
+    // const offset = page ? page * per_page : 0;
 
     const courseSlug = req.params.course_slug;
     try {
@@ -291,6 +291,54 @@ router.put(
 
       //update values to the value in req body
       coursesReturn.thumbnail = thumbnail;
+
+      await coursesReturn.save();
+
+      return res.json(coursesReturn);
+    } catch (err) {
+      // console.log(err);
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
+// [PUT] UPDATE ALL COURSE INFO EVERYTHING
+
+router.put(
+  "/courses/all/:id",
+  passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const id = req.params.id;
+    const {
+      title,
+      thumbnail,
+      course_slug,
+      description,
+      price,
+      introduction_video,
+      group_link,
+      level,
+      published,
+    } = req.body;
+
+    try {
+      const coursesReturn = await courses.findOne({
+        where: { id: id },
+      });
+
+      //update values to the value in req body
+      coursesReturn.title = title;
+      coursesReturn.thumbnail = thumbnail;
+      coursesReturn.course_slug = course_slug;
+      coursesReturn.description = description;
+      coursesReturn.price = price;
+      coursesReturn.introduction_video = introduction_video;
+      coursesReturn.group_link = group_link;
+      coursesReturn.level = level;
+      coursesReturn.published = published;
 
       await coursesReturn.save();
 

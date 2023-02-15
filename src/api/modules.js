@@ -12,7 +12,7 @@ router.post(
   passport.authenticate("jwt", { session: false }),
 
   async (req, res) => {
-    const { title, course_id, module_order, unlocks_after_days } = req.body;
+    const { title, course_id, module_order } = req.body;
     try {
       const course = await courses.findOne({
         where: { id: course_id },
@@ -22,7 +22,7 @@ router.post(
         title,
         course_id: course.id,
         module_order,
-        unlocks_after_days,
+        // unlocks_after_days,
       });
 
       return res.json(modulesReturn);
@@ -42,7 +42,7 @@ router.put(
   async (req, res) => {
     const id = req.params.id;
 
-    const { title, module_order, unlocks_after_days } = req.body;
+    const { title, module_order } = req.body;
     try {
       const module = await modules.findOne({
         where: { id: id },
@@ -50,8 +50,7 @@ router.put(
 
       module.title = title;
       module.module_order = module_order;
-      module.unlocks_after_days = unlocks_after_days;
-      // section.brief_description = brief_description;
+      // module.unlocks_after_days = unlocks_after_days;
 
       await module.save();
 

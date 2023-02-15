@@ -9,6 +9,8 @@ const lessonsApi = require("./lessons");
 const resourcesApi = require("./resources");
 const timestampsApi = require("./timestamps");
 const enrollmentsApi = require("./enrollments");
+const notificationsApi = require("./notifications");
+const readNotificationsApi = require("./read_notifications");
 
 const router = express.Router();
 
@@ -21,5 +23,7 @@ router.use(lessonsApi);
 router.use(resourcesApi);
 router.use(timestampsApi);
 router.use(enrollmentsApi);
+router.use(notificationsApi);
+router.use(readNotificationsApi);
 
 module.exports = router;

@@ -33,19 +33,24 @@ module.exports = {
       },
       redirect_url: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notNull: { msg: "redirect_url cannot be empty" },
-          notEmpty: { msg: "redirect_url cannot be empty" },
-        },
+        allowNull: true,
+        defaultValue: null,
       },
       // Add default icon if null of Bloxat's logo
-      notification_icon: {
+      from_profile_pic: {
         type: DataTypes.STRING,
         allowNull: false,
         validate: {
-          notNull: { msg: "notification_icon cannot be empty" },
-          notEmpty: { msg: "notification_icon cannot be empty" },
+          notNull: { msg: "from_profile_pic cannot be empty" },
+          notEmpty: { msg: "from_profile_pic cannot be empty" },
+        },
+      },
+      from_name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notNull: { msg: "from_name cannot be empty" },
+          notEmpty: { msg: "from_name cannot be empty" },
         },
       },
       createdAt: {
