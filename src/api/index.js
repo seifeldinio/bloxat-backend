@@ -11,6 +11,7 @@ const timestampsApi = require("./timestamps");
 const enrollmentsApi = require("./enrollments");
 const notificationsApi = require("./notifications");
 const readNotificationsApi = require("./read_notifications");
+const freeOptInApi = require("./free_opt_ins");
 
 const router = express.Router();
 
@@ -25,5 +26,6 @@ router.use(timestampsApi);
 router.use(enrollmentsApi);
 router.use(notificationsApi);
 router.use(readNotificationsApi);
+router.use(freeOptInApi);
 
 module.exports = router;

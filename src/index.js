@@ -55,6 +55,12 @@ app.use(middlewares.errorHandler);
 
 // const updateProjectProgress = require("./socket/projectProgressHandler");
 
+// SOCKET.IO EVENT LISTENERS LIMIT
+// Change to 80 or 150 whatever and see what happens
+// THIS CHANGES THE DEFAULT LIMIT GLOBALLY
+require("events").EventEmitter.prototype._maxListeners = 100;
+// require("events").EventEmitter.defaultMaxListeners = Infinity;
+
 //Settings
 // socket.io connections
 io.on("connection", (socket) => {
