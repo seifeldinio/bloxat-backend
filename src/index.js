@@ -96,19 +96,8 @@ io.on("connection", (socket) => {
 });
 
 // Switched form app.listen -> server.listen (to be able to use socket.io)
-server.listen(
-  {
-    port: process.env.APP_PORT,
-    retry: {
-      match: [/Deadlock/i, sequelize.ConnectionError], // Retry on connection errors
-      max: 3, // Maximum retry 3 times
-      backoffBase: 3000, // Initial backoff duration in ms. Default: 100,
-      backoffExponent: 1.5, // Exponent to increase backoff each try. Default: 1.1
-    },
-  },
-  async () => {
-    console.log("Bloxat server up and running :)");
-    await sequelize.authenticate();
-    console.log("DATABASE CONNECTED!");
-  }
-);
+server.listen({ port: process.env.APP_PORT }, async () => {
+  console.log("Bloxat server up and running :)");
+  await sequelize.authenticate();
+  console.log("DATABASE CONNECTED!");
+});
