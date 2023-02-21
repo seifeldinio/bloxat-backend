@@ -27,6 +27,7 @@ router.post(
       return res.json(timestampsReturn);
     } catch (err) {
       // console.log(err);
+      // to see what happened if an error occurred
       return res.status(500).json(err);
     }
   }
