@@ -10,7 +10,7 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
   const course_id = req.params.course_id;
 
   //   //   SEND ACKNOWLEDGEMENT TO OPAY WITH STATUS 200 OK
-  //   res.sendStatus(200);
+  res.sendStatus(200);
   try {
     const { ...data } = req.body;
 
@@ -32,8 +32,8 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
       });
 
       //   SEND ACKNOWLEDGEMENT TO OPAY WITH STATUS 200 OK
-      return res.sendStatus(200);
-      //   return res.json(enrollmentsReturn);
+      // return res.sendStatus(200);
+      return res.json(enrollmentsReturn);
     } else {
       return null;
     }
