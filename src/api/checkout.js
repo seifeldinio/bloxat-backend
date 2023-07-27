@@ -14,7 +14,7 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
   try {
     const { ...data } = req.body;
 
-    if (data.status === "SUCCESS") {
+    if (data.payload.status === "SUCCESS") {
       //   console.log("SUCCESS YO!");
 
       const user = await users.findOne({
