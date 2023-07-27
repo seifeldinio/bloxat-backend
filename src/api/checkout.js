@@ -18,21 +18,19 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
       //   console.log("SUCCESS YO!");
 
       //   GET USER
-      const userReturn = await users.findOne({
+      const user = await users.findOne({
         where: { id: user_id },
-        //DONT SHOW HASH IN THE RESPONSE
-        attributes: { exclude: ["hash"] },
       });
 
-      //    GET COURSE
-      const courseReturn = await courses.findOne({
+      // GET COURSE
+      const course = await courses.findOne({
         where: { id: course_id },
       });
 
       // ENROLL USER
       const enrollmentsReturn = await enrollments.create({
-        user_id: userReturn.id,
-        course_id: courseReturn.id,
+        user_id: user.id,
+        course_id: course.id,
       });
 
       return res.json(enrollmentsReturn);
