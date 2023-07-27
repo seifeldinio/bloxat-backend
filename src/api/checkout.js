@@ -34,7 +34,7 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
       //   SEND ACKNOWLEDGEMENT TO OPAY WITH STATUS 200 OK
       // return res.sendStatus(200);
 
-      return res.json(enrollmentsReturn);
+      // return res.json(enrollmentsReturn);
     } else {
       return null;
     }
