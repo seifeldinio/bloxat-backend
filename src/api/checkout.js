@@ -9,7 +9,7 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
   const user_id = req.params.user_id;
   const course_id = req.params.course_id;
 
-  //   //   SEND ACKNOWLEDGEMENT TO OPAY WITH STATUS 200 OK
+  //   SEND ACKNOWLEDGEMENT TO OPAY WITH STATUS 200 OK
   res.sendStatus(200);
   try {
     const { ...data } = req.body;
