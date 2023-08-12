@@ -9,6 +9,9 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
   const user_id = req.params.user_id;
   const course_id = req.params.course_id;
 
+  // Send acknowledgment to OPay with a status of 200 OK
+  res.sendStatus(200);
+
   try {
     const { payload } = req.body;
 
@@ -27,15 +30,15 @@ router.post("/opay-callback/:user_id/:course_id", async (req, res) => {
           course_id: course.id,
         });
 
-        // Acknowledge the callback with a success message and status 200
-        return res.sendStatus(200);
+        // Respond with a success message and status 200
+        // return res.status(200).json({ message: "Enrollment successful" });
       } else {
         // User or course not found
         return res.status(404).json({ message: "User or course not found" });
       }
     } else {
       // Respond with a failure message and status 200
-      return res.status(200).json({ message: "Payment not successful" });
+      // return res.status(200).json({ message: "Payment not successful" });
     }
   } catch (err) {
     console.error(err);
