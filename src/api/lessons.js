@@ -25,8 +25,8 @@ router.post(
       lesson_order,
       lesson_video_url,
       description,
-      upsell_cta_title,
-      upsell_cta_url,
+      // upsell_cta_title,
+      // upsell_cta_url,
     } = req.body;
 
     try {
@@ -46,8 +46,8 @@ router.post(
         lesson_order,
         lesson_video_url,
         description,
-        upsell_cta_title,
-        upsell_cta_url,
+        // upsell_cta_title,
+        // upsell_cta_url,
       });
 
       return res.json(lessonReturn);
@@ -112,14 +112,7 @@ router.put(
   async (req, res) => {
     const id = req.params.id;
 
-    const {
-      title,
-      lesson_order,
-      lesson_video_url,
-      description,
-      upsell_cta_title,
-      upsell_cta_url,
-    } = req.body;
+    const { title, lesson_order, lesson_video_url, description } = req.body;
     try {
       const lesson = await lessons.findOne({
         where: {
@@ -131,8 +124,6 @@ router.put(
       lesson.lesson_order = lesson_order;
       lesson.lesson_video_url = lesson_video_url;
       lesson.description = description;
-      lesson.upsell_cta_title = upsell_cta_title;
-      lesson.upsell_cta_url = upsell_cta_url;
 
       await lesson.save();
 

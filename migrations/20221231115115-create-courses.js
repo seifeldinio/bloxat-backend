@@ -35,49 +35,50 @@ module.exports = {
       },
       thumbnail: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notNull: { msg: "thumbnail cannot be empty" },
-          notEmpty: { msg: "thumbnail cannot be empty" },
-        },
+        allowNull: true,
+        // validate: {
+        //   notNull: { msg: "thumbnail cannot be empty" },
+        //   notEmpty: { msg: "thumbnail cannot be empty" },
+        // },
       },
       description: {
         type: DataTypes.STRING(1234),
-        allowNull: false,
+        allowNull: true,
       },
       price: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        validate: {
-          notNull: { msg: "price cannot be empty" },
-          notEmpty: { msg: "price cannot be empty" },
-        },
+        allowNull: true,
+        defaultValue: 0,
+        // validate: {
+        //   notNull: { msg: "price cannot be empty" },
+        //   notEmpty: { msg: "price cannot be empty" },
+        // },
       },
       introduction_video: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notNull: { msg: "introduction_video cannot be empty" },
-          notEmpty: { msg: "introduction_video cannot be empty" },
-        },
+        allowNull: true,
+        // validate: {
+        //   notNull: { msg: "introduction_video cannot be empty" },
+        //   notEmpty: { msg: "introduction_video cannot be empty" },
+        // },
       },
       group_link: {
         type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notNull: { msg: "group_link cannot be empty" },
-          notEmpty: { msg: "group_link cannot be empty" },
-        },
+        allowNull: true,
+        // validate: {
+        //   notNull: { msg: "group_link cannot be empty" },
+        //   notEmpty: { msg: "group_link cannot be empty" },
+        // },
       },
-      level: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        unique: true,
-        validate: {
-          notNull: { msg: "level cannot be empty" },
-          notEmpty: { msg: "level cannot be empty" },
-        },
-      },
+      // level: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: false,
+      //   unique: true,
+      //   validate: {
+      //     notNull: { msg: "level cannot be empty" },
+      //     notEmpty: { msg: "level cannot be empty" },
+      //   },
+      // },
       published: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

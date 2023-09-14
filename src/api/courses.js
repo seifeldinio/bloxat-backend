@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 
-const { courses, modules } = require("../../models");
+const { courses, modules, lessons } = require("../../models");
 
 // const { Op } = require("sequelize");
 
@@ -15,26 +15,28 @@ router.post(
 
   async (req, res) => {
     const {
+      user_id,
       title,
       course_slug,
-      thumbnail,
-      description,
-      price,
-      introduction_video,
-      group_link,
-      level,
+      // thumbnail,
+      // description,
+      // price,
+      // introduction_video,
+      // group_link,
+      // level,
     } = req.body;
 
     try {
       const coursesReturn = await courses.create({
+        user_id,
         title,
         course_slug,
-        thumbnail,
-        description,
-        price,
-        introduction_video,
-        group_link,
-        level,
+        // thumbnail,
+        // description,
+        // price,
+        // introduction_video,
+        // group_link,
+        // level,
       });
       return res.json(coursesReturn);
     } catch (err) {
@@ -44,13 +46,15 @@ router.post(
   }
 );
 
-// [GET] ALL COURSES
+// [GET] ALL COURSES OF A TEACHER BY HIS user_id
 router.get(
-  "/courses",
+  "/courses/:user_id",
 
   // passport.authenticate("jwt", { session: false }),
 
   async (req, res) => {
+    const user_id = req.params.user_id;
+
     //pagination
     let page = parseInt(req.query.page);
     let per_page = parseInt(req.query.per_page || 10);
@@ -61,7 +65,9 @@ router.get(
     // let search = req.query.search || "";
 
     try {
-      const coursesReturn = await courses.findAll({
+      const coursesReturn = await courses.findAndCountAll({
+        where: { user_id: user_id },
+
         // pagination
         limit: per_page,
         offset: offset,
@@ -206,6 +212,8 @@ router.get(
         include: [
           {
             model: modules,
+            limit: per_page,
+            offset: offset,
             attributes: {
               exclude: ["course_id", "module_id", "createdAt", "updatedAt"],
             },
@@ -231,6 +239,8 @@ router.get(
             //     },
             //   },
             // ],
+            // Order from newest to oldest
+            order: [["module_order", "ASC"]],
           },
         ],
       });
@@ -243,6 +253,81 @@ router.get(
     }
   }
 );
+
+// [GET] COURSE CONTENT FOR EDITING BY ID
+router.get("/courses/id/content/:id", async (req, res) => {
+  // Pagination
+  let page = parseInt(req.query.page);
+  let per_page = parseInt(req.query.per_page || 10);
+  const offset = page ? page * per_page : 0;
+  const courseId = req.params.id;
+
+  try {
+    // Fetch the course without modules initially
+    const course = await courses.findOne({
+      where: { id: courseId },
+      attributes: {
+        exclude: [
+          "user_id",
+          "course_slug",
+          "thumbnail",
+          "description",
+          "price",
+          "group_link",
+          "published",
+          "createdAt",
+          "updatedAt",
+        ],
+      },
+    });
+
+    // Fetch the modules for the course
+    const modulesData = await modules.findAll({
+      where: { course_id: courseId },
+      limit: per_page,
+      offset: offset,
+      attributes: {
+        exclude: ["course_id", "module_id", "createdAt", "updatedAt"],
+      },
+      // Order from newest to oldest
+      order: [["module_order", "ASC"]],
+    });
+
+    // Fetch lessons for each module
+    const modulesWithLessons = await Promise.all(
+      modulesData.map(async (module) => {
+        const moduleWithLessons = module.toJSON();
+
+        moduleWithLessons.lessons = await lessons.findAll({
+          where: { module_id: module.module_id },
+          attributes: {
+            exclude: [
+              "course_id",
+              "lesson_video_url",
+              "description",
+              "createdAt",
+              "updatedAt",
+            ],
+          },
+          // Order from newest to oldest
+          order: [["lesson_order", "ASC"]],
+        });
+
+        return moduleWithLessons;
+      })
+    );
+
+    // Combine the course and modulesWithLessons data
+    const coursesReturn = {
+      ...course.toJSON(),
+      modules: modulesWithLessons,
+    };
+
+    return res.json(coursesReturn);
+  } catch (err) {
+    return res.status(500).json({ error: "Something went wrong :/" });
+  }
+});
 
 // [PUT] UPDATE COURES TO -> PUBLISHED
 router.put(
@@ -261,6 +346,36 @@ router.put(
 
       //update values to the value in req body
       coursesReturn.published = published;
+
+      await coursesReturn.save();
+
+      return res.json(coursesReturn);
+    } catch (err) {
+      // console.log(err);
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
+// [PUT] UPDATE COURSE INTRODUCTION VIDEO
+router.put(
+  "/courses/intro/:id",
+
+  passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const id = req.params.id;
+    const { introduction_video } = req.body;
+
+    try {
+      const coursesReturn = await courses.findOne({
+        where: { id: id },
+      });
+
+      //update values to the value in req body
+      coursesReturn.introduction_video = introduction_video;
 
       await coursesReturn.save();
 
@@ -362,12 +477,13 @@ router.put(
     const id = req.params.id;
     const {
       title,
-      course_slug,
+      // course_slug,
       description,
       price,
-      introduction_video,
-      group_link,
-      level,
+      published,
+      // introduction_video,
+      // group_link,
+      // level,
     } = req.body;
 
     try {
@@ -377,12 +493,14 @@ router.put(
 
       //update values to the value in req body
       coursesReturn.title = title;
-      coursesReturn.course_slug = course_slug;
+      // coursesReturn.course_slug = course_slug;
       coursesReturn.description = description;
       coursesReturn.price = price;
-      coursesReturn.introduction_video = introduction_video;
-      coursesReturn.group_link = group_link;
-      coursesReturn.level = level;
+      coursesReturn.published = published;
+
+      // coursesReturn.introduction_video = introduction_video;
+      // coursesReturn.group_link = group_link;
+      // coursesReturn.level = level;
 
       await coursesReturn.save();
 

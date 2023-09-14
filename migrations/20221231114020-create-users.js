@@ -75,6 +75,24 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      brand_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      brand_slug: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      brand_logo_light: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      brand_logo_dark: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE,

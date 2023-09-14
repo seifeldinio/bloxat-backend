@@ -7,9 +7,14 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate({ enrollments }) {
+    static associate({ enrollments, courses }) {
       // define association here
+      // HAS MANY ENROLLMENTS -> STUDENT
       this.hasMany(enrollments, {
+        foreignKey: "user_id",
+      });
+      // HAS MANY COURSES -> TEACHER
+      this.hasMany(courses, {
         foreignKey: "user_id",
       });
     }
@@ -74,6 +79,24 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      brand_name: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      brand_slug: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true,
+      },
+      brand_logo_light: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      brand_logo_dark: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
       player_id_app: {
         type: DataTypes.STRING,

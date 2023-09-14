@@ -29,11 +29,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      role: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        defaultValue: "student",
-      },
       level_progress_percentage: {
         type: DataTypes.FLOAT,
         allowNull: false,
@@ -50,6 +45,10 @@ module.exports = (sequelize, DataTypes) => {
       last_done_lesson_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
+      },
+      price: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
       },
     },
     {

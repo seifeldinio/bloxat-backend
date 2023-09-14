@@ -76,14 +76,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(1234),
         allowNull: false,
       },
-      upsell_cta_title: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      upsell_cta_url: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
+      // upsell_cta_title: {
+      //   type: DataTypes.STRING,
+      //   allowNull: true,
+      // },
+      // upsell_cta_url: {
+      //   type: DataTypes.STRING,
+      //   allowNull: true,
+      // },
     },
     {
       sequelize,

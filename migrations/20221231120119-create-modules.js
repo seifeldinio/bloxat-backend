@@ -22,7 +22,7 @@ module.exports = {
       title: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
+        // unique: true,
         validate: {
           notNull: { msg: "module title cannot be empty" },
           notEmpty: { msg: "module title cannot be empty" },

@@ -1,7 +1,7 @@
 const express = require("express");
 
 const router = express.Router();
-const { users, enrollments } = require("../../models");
+const { users, enrollments, courses } = require("../../models");
 const passport = require("passport");
 
 const { Op } = require("sequelize");
@@ -92,15 +92,17 @@ router.get(
 router.get(
   "/users/:id",
   // passport.authenticate("jwt", { session: false }),
-
   async (req, res) => {
     const id = req.params.id;
 
-    //pagination
+    // Pagination
     let page = parseInt(req.query.page);
     let per_page = parseInt(req.query.per_page || 10);
-
     const offset = page ? page * per_page : 0;
+
+    // Search queries for enrollments and courses
+    let searchEnrollments = req.query.searchEnrollments || "";
+    let searchCourses = req.query.searchCourses || "";
 
     try {
       const usersReturn = await users.findOne({
@@ -112,24 +114,120 @@ router.get(
             offset: offset,
             required: false,
             attributes: {
-              exclude: ["id", "user_id", "createdAt", "updatedAt"],
+              exclude: ["id", "user_id", "updatedAt"],
+            },
+            where: {
+              course_id: { [Op.like]: `%${searchEnrollments}%` }, // Use searchEnrollments for enrollments
+            },
+            // Order from newest to oldest
+            order: [["createdAt", "DESC"]],
+          },
+          {
+            model: courses,
+            limit: per_page,
+            offset: offset,
+            required: false,
+            attributes: {
+              exclude: [
+                "thumbnail",
+                "description",
+                "price",
+                "introduction_video",
+                "group_link",
+                "updatedAt",
+                "createdAt",
+              ],
+            },
+            where: {
+              id: { [Op.like]: `%${searchCourses}%` }, // Use searchCourses for courses
             },
             // Order from newest to oldest
             order: [["createdAt", "DESC"]],
           },
         ],
-        //DONT SHOW HASH IN THE RESPONSE
+        // Don't show hash in the response
         attributes: {
-          exclude: ["hash", "createdAt", "updatedAt"],
+          exclude: [
+            "hash",
+            // "createdAt",
+            "updatedAt",
+            "player_id_app",
+            "player_id_web",
+            "country",
+          ],
         },
       });
 
       return res.json(usersReturn);
     } catch (err) {
-      // console.log(err);
-      return res
-        .status(500)
-        .json({ error: "Well ... Something went wrong :/" });
+      // Handle errors
+      return res.status(500).json({ error: "Something went wrong :/" });
+    }
+  }
+);
+
+//   [GET] GET USER BY brand_slug
+router.get(
+  "/users/brand/:brand_slug",
+  // passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    const brand_slug = req.params.brand_slug;
+
+    // Pagination
+    let page = parseInt(req.query.page);
+    let per_page = parseInt(req.query.per_page || 10);
+    const offset = page ? page * per_page : 0;
+
+    // Search queries for enrollments and courses
+    // let searchEnrollments = req.query.searchEnrollments || "";
+    let search = req.query.search || "";
+
+    try {
+      const usersReturn = await users.findOne({
+        where: { brand_slug: brand_slug },
+        include: [
+          {
+            model: courses,
+            limit: per_page,
+            offset: offset,
+            required: false,
+            attributes: {
+              exclude: [
+                "user_id",
+                "price",
+                "introduction_video",
+                "group_link",
+                "updatedAt",
+                "createdAt",
+              ],
+            },
+            where: {
+              id: { [Op.like]: `%${search}%` }, // Use searchCourses for courses
+              published: true, // Filter by published courses
+            },
+            // Order from newest to oldest
+            order: [["createdAt", "DESC"]],
+          },
+        ],
+        // Don't show hash in the response
+        attributes: {
+          exclude: [
+            "hash",
+            // "createdAt",
+            "is_admin",
+            "createdAt",
+            "updatedAt",
+            "player_id_app",
+            "player_id_web",
+            "country",
+          ],
+        },
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // Handle errors
+      return res.status(500).json({ error: "Something went wrong :/" });
     }
   }
 );
@@ -147,7 +245,7 @@ router.put(
     const {
       first_name,
       last_name,
-      // , phone_number
+      phone_number,
       // , country
     } = req.body;
 
@@ -159,6 +257,8 @@ router.put(
       //update values to the value in req body
       usersReturn.first_name = first_name;
       usersReturn.last_name = last_name;
+      usersReturn.phone_number = phone_number;
+
       // usersReturn.phone_number = phone_number;
       // usersReturn.country = country;
 
