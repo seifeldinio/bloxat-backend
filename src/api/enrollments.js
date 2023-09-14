@@ -31,7 +31,7 @@ router.post(
 
       return res.json(enrollmentsReturn);
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       return res.status(500).json(err);
     }
   }
@@ -299,7 +299,7 @@ router.get(
         totalSum,
       });
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       return res
         .status(500)
         .json({ error: "Well ... Something went wrong :/" });

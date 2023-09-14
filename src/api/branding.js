@@ -36,11 +36,11 @@ router.put(
 
       await usersReturn.save();
 
-      console.log(usersReturn);
+      // console.log(usersReturn);
 
       return res.json(usersReturn);
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       return res
         .status(500)
         .json({ error: "Well ... Something went wrong :/" });

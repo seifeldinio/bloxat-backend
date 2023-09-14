@@ -34,7 +34,7 @@ router.post(
 
       return res.json(resourcesReturn);
     } catch (err) {
-      console.log(err);
+      // console.log(err);
       return res.status(500).json(err);
     }
   }

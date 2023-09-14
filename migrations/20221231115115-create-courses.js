@@ -27,7 +27,7 @@ module.exports = {
       course_slug: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
+        // unique: true,
         validate: {
           notNull: { msg: "course_slug cannot be empty" },
           notEmpty: { msg: "course_slug cannot be empty" },
