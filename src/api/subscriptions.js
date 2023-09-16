@@ -93,16 +93,16 @@ router.get(
   async (req, res) => {
     const userId = req.params.user_id;
 
-    //pagination
-    // let page = parseInt(req.query.page);
-    // let per_page = parseInt(req.query.per_page || 10);
-
-    // const offset = page ? page * per_page : 0;
+    // Pagination
+    let page = parseInt(req.query.page);
+    let per_page = parseInt(req.query.per_page || 10);
+    const offset = page ? page * per_page : 0;
 
     try {
       const usersReturn = await subscriptions.findAndCountAll({
         where: { user_id: userId },
-
+        limit: per_page,
+        offset: offset,
         //DONT SHOW HASH IN THE RESPONSE
         attributes: {
           exclude: ["createdAt", "updatedAt"],
