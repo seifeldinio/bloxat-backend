@@ -93,6 +93,14 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      trial_end: {
+        allowNull: true,
+        type: DataTypes.DATE,
+      },
+      subscription_end: {
+        allowNull: true,
+        type: DataTypes.DATE,
+      },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE,

@@ -14,7 +14,7 @@ const { genSaltSync, hashSync, compareSync, compare } = require("bcrypt");
 router.put(
   "/branding/:id",
 
-  passport.authenticate("jwt", { session: false }),
+  // passport.authenticate("jwt", { session: false }),
 
   async (req, res) => {
     const id = req.params.id;
@@ -22,6 +22,7 @@ router.put(
     const { brand_slug } = req.body;
     const { brand_logo_light } = req.body;
     const { brand_logo_dark } = req.body;
+    const { trial_end } = req.body;
 
     try {
       const usersReturn = await users.findOne({
@@ -33,6 +34,7 @@ router.put(
       usersReturn.brand_slug = brand_slug;
       usersReturn.brand_logo_light = brand_logo_light;
       usersReturn.brand_logo_dark = brand_logo_dark;
+      usersReturn.trial_end = trial_end;
 
       await usersReturn.save();
 

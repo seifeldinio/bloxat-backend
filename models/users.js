@@ -98,6 +98,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      trial_end: {
+        allowNull: true,
+        type: DataTypes.DATE,
+      },
+      subscription_end: {
+        allowNull: true,
+        type: DataTypes.DATE,
+      },
       player_id_app: {
         type: DataTypes.STRING,
         allowNull: true,
