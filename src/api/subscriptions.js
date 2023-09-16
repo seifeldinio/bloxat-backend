@@ -23,7 +23,7 @@ const { Op, Sequelize } = require("sequelize");
 // [POST] CREATE SUBSCRIPTION OBJECT AND UPDATE THE USER'S SUBSCRIPTION_END DATE
 router.post(
   "/subscriptions",
-  passport.authenticate("jwt", { session: false }),
+  //   passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     try {
       console.log("Received request body:", req.body);
@@ -79,7 +79,7 @@ router.post(
 
       return res.json(subscriptionsReturn);
     } catch (err) {
-    //   console.error(err);
+      //   console.error(err);
       return res.status(500).json(err);
     }
   }
