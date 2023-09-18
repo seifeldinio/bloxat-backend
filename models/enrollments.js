@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        unique: true,
       },
       course_id: {
         type: DataTypes.INTEGER,
@@ -49,6 +50,31 @@ module.exports = (sequelize, DataTypes) => {
       price: {
         type: DataTypes.INTEGER,
         allowNull: false,
+      },
+      currency: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      // way of enrollment
+      enrolled_through: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+
+      // For paymob
+      order_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+      },
+      transaction_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
       },
     },
     {

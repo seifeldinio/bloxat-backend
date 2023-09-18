@@ -13,7 +13,7 @@ router.post(
   passport.authenticate("jwt", { session: false }),
 
   async (req, res) => {
-    const { user_id, course_id, price } = req.body;
+    const { user_id, course_id, price, currency, enrolled_through } = req.body;
     try {
       const user = await users.findOne({
         where: { id: user_id },
@@ -27,11 +27,74 @@ router.post(
         user_id: user.id,
         course_id: course.id,
         price: price,
+        currency: currency,
+        status: "1",
+        enrolled_through: enrolled_through,
       });
 
       return res.json(enrollmentsReturn);
     } catch (err) {
       // console.log(err);
+      return res.status(500).json(err);
+    }
+  }
+);
+
+// [POST ENROLLMENT] PAYMOB PAYMENT CALLBACK
+router.post(
+  "/paymob/enroll",
+  //   passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    try {
+      console.log("Received request body:", req.body);
+
+      const obj = req.body.obj;
+      console.log("Extracted 'obj':", obj);
+
+      // Check if the transaction is successful and not pending
+      if (obj.success !== true || obj.pending !== false) {
+        return res.status(400).json({ message: "Invalid transaction" });
+      }
+
+      // Extract variables
+      const userId = obj.order.shipping_data.extra_description;
+      const courseId = obj.order.shipping_data.building;
+
+      const amount = obj.amount_cents / 100; // Convert amount to full from cents
+      const orderId = obj.order.id;
+      const transactionId = obj.id;
+      const currency = obj.currency;
+      const status = obj.success;
+
+      console.log("Extracted 'extra_description':", userId);
+
+      const user = await users.findOne({
+        where: {
+          id: parseInt(userId),
+        },
+      });
+      const course = await courses.findOne({
+        where: { id: parseInt(courseId) },
+      });
+
+      if (!user || !course) {
+        return res.status(404).json({ message: "User or course not found" });
+      }
+
+      const enrollmentsReturn = await enrollments.create({
+        user_id: user.id,
+        course_id: course.id,
+        price: amount,
+        currency: currency,
+        status: status,
+        enrolled_through: "paymob",
+        order_id: orderId,
+        transaction_id: transactionId,
+      });
+
+      return res.json(enrollmentsReturn);
+    } catch (err) {
+      console.error(err);
       return res.status(500).json(err);
     }
   }

@@ -192,6 +192,43 @@ router.get(
   }
 );
 
+// [GET] GET COURSE FOR CHECKOUT details
+router.get(
+  "/courses/slug/checkout-details/:course_slug",
+
+  // passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    //pagindation
+    // let page = parseInt(req.query.page);
+    // let per_page = parseInt(req.query.per_page || 10);
+
+    // const offset = page ? page * per_page : 0;
+
+    const courseSlug = req.params.course_slug;
+    try {
+      const coursesReturn = await courses.findOne({
+        where: { course_slug: courseSlug },
+        attributes: {
+          exclude: [
+            "introduction_video",
+            "group_link",
+            "published",
+            "createdAt",
+            "updatedAt",
+          ],
+        },
+      });
+
+      return res.json(coursesReturn);
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
 // [GET] COURSE BY ID
 router.get(
   "/courses/id/:id",
@@ -481,6 +518,7 @@ router.put(
       description,
       price,
       published,
+      currency,
       // introduction_video,
       // group_link,
       // level,
@@ -497,6 +535,7 @@ router.put(
       coursesReturn.description = description;
       coursesReturn.price = price;
       coursesReturn.published = published;
+      coursesReturn.currency = currency;
 
       // coursesReturn.introduction_video = introduction_video;
       // coursesReturn.group_link = group_link;

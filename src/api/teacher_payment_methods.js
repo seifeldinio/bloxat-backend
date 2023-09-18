@@ -93,50 +93,209 @@ router.get(
     }
   }
 );
+
+// [GET] TEACHER PAYMENT METHODS (SHOW IN THE CHECKOUT)
+router.get(
+  "/users/payment-methods/:id",
+  // passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    const id = req.params.id;
+
+    // Search queries for enrollments and courses
+
+    try {
+      const usersReturn = await users.findOne({
+        where: { id: id },
+        include: [
+          {
+            model: paymob_integrations,
+            required: false,
+            attributes: {
+              exclude: ["id", "createdAt", "updatedAt"],
+            },
+          },
+        ],
+        // Don't show hash in the response
+        attributes: {
+          exclude: [
+            "hash",
+            // "createdAt",
+            "updatedAt",
+            "player_id_app",
+            "player_id_web",
+            "country",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "avatar_url",
+            "is_admin",
+            "brand_name",
+            "brand_logo_light",
+            "brand_logo_dark",
+            "trial_end",
+            "subscription_end",
+            "createdAt",
+          ],
+        },
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // Handle errors
+      console.log(err);
+      return res.status(500).json({ error: "Something went wrong :/" });
+    }
+  }
+); 
+
+
+
+// [GET] TEACHER PAYMENT METHODS BY BRAND SLUG (SHOW IN THE CHECKOUT)
+router.get(
+  "/users/payment-methods/brand/:brand_slug",
+  // passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    const brandSlug = req.params.brand_slug;
+
+    // Search queries for enrollments and courses
+
+    try {
+      const usersReturn = await users.findOne({
+        where: { brand_slug: brandSlug },
+        include: [
+          {
+            model: paymob_integrations,
+            required: false,
+            attributes: {
+              exclude: ["id", "createdAt", "updatedAt"],
+            },
+          },
+        ],
+        // Don't show hash in the response
+        attributes: {
+          exclude: [
+            "hash",
+            // "createdAt",
+            "updatedAt",
+            "player_id_app",
+            "player_id_web",
+            "country",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "avatar_url",
+            "is_admin",
+            "brand_name",
+            "brand_logo_light",
+            "brand_logo_dark",
+            "trial_end",
+            "subscription_end",
+            "createdAt",
+          ],
+        },
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // Handle errors
+      console.log(err);
+      return res.status(500).json({ error: "Something went wrong :/" });
+    }
+  }
+);
+
 // [PUT] TEACHER PAYMOB METHODS
+// Partial updates ... which means we don't have to provide everything in order to update just one thing
 router.put(
   "/paymob-integrations/:user_id",
-
-  // passport.authenticate("jwt", { session: false }),
-
-  // passport.authenticate("jwt", { session: false }),
-
+  passport.authenticate("jwt", { session: false }),
   async (req, res) => {
     const userId = req.params.user_id;
 
-    const {
-      paymob_enabled,
-      api_key,
-      online_card_id,
-      online_card_enabled,
-      wallet_id,
-      wallet_enabled,
-      installment_id,
-      installment_enabled,
-    } = req.body;
-
     try {
+      const updatedFields = {};
+
+      // Iterate through the fields in the request body and update them if they exist
+      for (const field in req.body) {
+        updatedFields[field] = req.body[field];
+      }
+
+      const [updatedRowsCount] = await paymob_integrations.update(
+        updatedFields,
+        {
+          where: { user_id: userId },
+        }
+      );
+
+      if (updatedRowsCount === 0) {
+        return res.status(404).json({ error: "Resource not found" });
+      }
+
+      // Fetch the updated record
       const paymobMethodReturn = await paymob_integrations.findOne({
         where: { user_id: userId },
       });
 
-      //update values to the value in req body
-      paymobMethodReturn.paymob_enabled = paymob_enabled;
-      paymobMethodReturn.api_key = api_key;
-      paymobMethodReturn.online_card_id = online_card_id;
-      paymobMethodReturn.online_card_enabled = online_card_enabled;
-      paymobMethodReturn.wallet_id = wallet_id;
-      paymobMethodReturn.wallet_enabled = wallet_enabled;
-      paymobMethodReturn.installment_id = installment_id;
-      paymobMethodReturn.installment_enabled = installment_enabled;
-
-      await paymobMethodReturn.save();
-
       return res.json(paymobMethodReturn);
     } catch (err) {
-      return res
-        .status(500)
-        .json({ error: "Well ... Something went wrong :/" });
+      return res.status(500).json({ error: "Something went wrong :/" });
+    }
+  }
+);
+
+// [GET] PAYMOB INTEGRATION ONLY
+router.get(
+  "/users/paymob-integrations/:id",
+  // passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    const id = req.params.id;
+
+    // Search queries for enrollments and courses
+
+    try {
+      const usersReturn = await users.findOne({
+        where: { id: id },
+        include: [
+          {
+            model: paymob_integrations,
+            required: false,
+            attributes: {
+              exclude: ["id", "createdAt", "updatedAt"],
+            },
+          },
+        ],
+        // Don't show hash in the response
+        attributes: {
+          exclude: [
+            "hash",
+            // "createdAt",
+            "updatedAt",
+            "player_id_app",
+            "player_id_web",
+            "country",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "avatar_url",
+            "is_admin",
+            "brand_name",
+            "brand_logo_light",
+            "brand_logo_dark",
+            "trial_end",
+            "subscription_end",
+            "createdAt",
+          ],
+        },
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // Handle errors
+      console.log(err);
+      return res.status(500).json({ error: "Something went wrong :/" });
     }
   }
 );
