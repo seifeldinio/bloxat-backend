@@ -313,7 +313,17 @@ router.get(
         offset: offset,
         // Don't show certain attributes in the response
         attributes: {
-          exclude: ["id", "role", "updatedAt"],
+          exclude: [
+            "id",
+            "role",
+            "updatedAt",
+            "price",
+            "currency",
+            "status",
+            "enrolled_through",
+            "order_id",
+            "transaction_id",
+          ],
         },
         // Include some data about the enrolled user
         include: [
@@ -334,6 +344,9 @@ router.get(
                 "player_id_web",
                 "createdAt",
                 "updatedAt",
+                "brand_slug",
+                "trial_end",
+                "subscription_end",
               ],
             },
             where: {

@@ -7,7 +7,12 @@ module.exports = (sequelize, DataTypes) => {
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate({ enrollments, courses, paymob_integrations }) {
+    static associate({
+      enrollments,
+      courses,
+      paymob_integrations,
+      instapay_integrations,
+    }) {
       // define association here
       // HAS MANY ENROLLMENTS -> STUDENT
       this.hasMany(enrollments, {
@@ -18,8 +23,13 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "user_id",
       });
 
-      // HAS MANY TEACHER PAYMOB METHODS
+      // HAS MANY PAYMOB INTEGRATION
       this.hasMany(paymob_integrations, {
+        foreignKey: "user_id",
+      });
+
+      // HAS MANY INSTAPAY INTEGRATION
+      this.hasMany(instapay_integrations, {
         foreignKey: "user_id",
       });
     }
