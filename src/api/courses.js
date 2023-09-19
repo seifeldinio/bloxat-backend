@@ -474,6 +474,7 @@ router.get(
       });
 
       // Calculate the progress percentage
+
       const totalLessons = course.modules.reduce(
         (total, module) => total + module.lessons.length,
         0
