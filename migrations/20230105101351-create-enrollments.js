@@ -17,23 +17,23 @@ module.exports = {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      level_progress_percentage: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      last_done_module_order: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      last_done_lesson_order: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      last_done_lesson_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
+      // level_progress_percentage: {
+      //   type: DataTypes.FLOAT,
+      //   allowNull: false,
+      //   defaultValue: 0,
+      // },
+      // last_done_module_order: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      // },
+      // last_done_lesson_order: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      // },
+      // last_done_lesson_id: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      // },
       price: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -71,8 +71,17 @@ module.exports = {
         type: DataTypes.DATE,
       },
     });
+
+    // Add a unique constraint for user_id and course_id combination
+    await queryInterface.addConstraint("enrollments", {
+      fields: ["user_id", "course_id"],
+      type: "unique",
+      name: "compositeIndex",
+    });
   },
   down: async (queryInterface, Sequelize) => {
+    // Remove the unique constraint before dropping the table
+    await queryInterface.removeConstraint("enrollments", "compositeIndex");
     await queryInterface.dropTable("enrollments");
   },
 };

@@ -24,29 +24,30 @@ module.exports = (sequelize, DataTypes) => {
       user_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        unique: true,
+        unique: "compositeIndex", // Use a unique constraint for user_id and course_id combination
       },
       course_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        unique: "compositeIndex", // Use a unique constraint for user_id and course_id combination
       },
-      level_progress_percentage: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
-        defaultValue: 0,
-      },
-      last_done_module_order: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      last_done_lesson_order: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      last_done_lesson_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
+      // level_progress_percentage: {
+      //   type: DataTypes.FLOAT,
+      //   allowNull: false,
+      //   defaultValue: 0,
+      // },
+      // last_done_module_order: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      // },
+      // last_done_lesson_order: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      // },
+      // last_done_lesson_id: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      // },
       price: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -80,6 +81,13 @@ module.exports = (sequelize, DataTypes) => {
     {
       sequelize,
       modelName: "enrollments",
+      indexes: [
+        {
+          name: "compositeIndex",
+          unique: true,
+          fields: ["user_id", "course_id"], // Define the composite unique index there's has to be a unique combination of user_id and course_id in order to not enroll twice
+        },
+      ],
     }
   );
   return enrollments;

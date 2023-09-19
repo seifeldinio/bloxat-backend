@@ -7,8 +7,11 @@ const {
   lessons,
   resources,
   timestamps,
+  enrollments,
+  progress_users,
 } = require("../../models");
 const passport = require("passport");
+const { Op, Sequelize } = require("sequelize");
 
 // LESSONS
 // [POST] LESSON
@@ -103,6 +106,138 @@ router.get(
     }
   }
 );
+
+// GET LESSON BY ID
+router.get("/lessons/:course_slug/:lesson_id/:user_id", async (req, res) => {
+  try {
+    const { lesson_id, course_slug, user_id } = req.params;
+
+    const course = await findCourse(course_slug);
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const currentLesson = await findLesson(lesson_id, course.id);
+    if (!currentLesson) {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+
+    const nextLesson = await findNextLesson(
+      currentLesson.lesson_order,
+      course.id
+    );
+    const userEnrollment = await findUserEnrollment(user_id, course.id);
+
+    if (!userEnrollment) {
+      return res.status(404).json({ error: "Enrollment not found" });
+    }
+
+    const totalLessons = course.lessons.length;
+    const completedLessons = userEnrollment.last_done_lesson_order || 0;
+    const level_progress_percentage = (completedLessons / totalLessons) * 100;
+
+    userEnrollment.level_progress_percentage = level_progress_percentage;
+
+    const progressUser = await findProgressUser(user_id, lesson_id, course.id);
+    const isLessonCompleted = progressUser ? progressUser.is_completed : false;
+
+    const response = {
+      lessonData: currentLesson,
+      nextLessonId: nextLesson ? nextLesson.id : null,
+      enrollment: userEnrollment,
+      isLessonCompleted,
+    };
+
+    return res.json(response);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong :/" });
+  }
+});
+
+async function findCourse(courseSlug) {
+  return await courses.findOne({
+    where: {
+      course_slug: courseSlug,
+    },
+    include: [
+      {
+        model: lessons,
+        attributes: ["id", "lesson_order"],
+      },
+    ],
+  });
+}
+
+async function findLesson(lessonId, courseId) {
+  return await lessons.findOne({
+    where: {
+      id: lessonId,
+      course_id: courseId,
+    },
+    include: [
+      {
+        model: resources,
+        required: false,
+        attributes: {
+          exclude: ["lesson_id", "createdAt", "updatedAt"],
+        },
+      },
+    ],
+  });
+}
+
+async function findNextLesson(lessonOrder, courseId) {
+  return await lessons.findOne({
+    where: {
+      course_id: courseId,
+      lesson_order: {
+        [Op.gt]: lessonOrder,
+      },
+    },
+    order: [["lesson_order", "ASC"]],
+  });
+}
+
+async function findUserEnrollment(userId, courseId) {
+  return await enrollments.findOne({
+    where: { user_id: userId, course_id: courseId },
+    attributes: {
+      exclude: [
+        "id",
+        "role",
+        "createdAt",
+        "updatedAt",
+        "price",
+        "currency",
+        "status",
+        "enrolled_through",
+        "order_id",
+        "transaction_id",
+      ],
+    },
+  });
+}
+
+async function findProgressUser(userId, lessonId, courseId) {
+  return await progress_users.findOne({
+    where: {
+      user_id: userId,
+      lesson_id: lessonId,
+      course_id: courseId,
+    },
+    attributes: {
+      exclude: [
+        "id",
+        "course_id",
+        "user_id",
+        "lesson_id",
+        "createdAt",
+        "updatedAt",
+      ],
+    },
+  });
+}
 
 // [PUT] UPDATE LESSON
 router.put(

@@ -3,7 +3,13 @@ const express = require("express");
 const router = express.Router();
 const passport = require("passport");
 
-const { courses, modules, lessons } = require("../../models");
+const {
+  courses,
+  modules,
+  lessons,
+  enrollments,
+  progress_users,
+} = require("../../models");
 
 // const { Op } = require("sequelize");
 
@@ -365,6 +371,170 @@ router.get("/courses/id/content/:id", async (req, res) => {
     return res.status(500).json({ error: "Something went wrong :/" });
   }
 });
+
+// [GET] COURSE CONTENT FOR STUDENTS
+router.get(
+  "/courses/course-content/:course_slug/:user_id",
+  async (req, res) => {
+    try {
+      const courseSlug = req.params.course_slug;
+      const userId = req.params.user_id;
+
+      // Fetch the course with modules and lessons
+      const course = await courses.findOne({
+        where: { course_slug: courseSlug },
+        attributes: {
+          exclude: [
+            "user_id",
+            "course_slug",
+            "thumbnail",
+            "description",
+            "price",
+            "group_link",
+            "published",
+            "createdAt",
+            "updatedAt",
+            "currency",
+            "introduction_video",
+          ],
+        },
+        include: [
+          {
+            model: modules,
+            attributes: {
+              exclude: ["course_id", "module_id", "createdAt", "updatedAt"],
+            },
+            order: [["module_order", "ASC"]],
+            include: [
+              {
+                model: lessons,
+                attributes: {
+                  exclude: [
+                    "course_id",
+                    "lesson_video_url",
+                    "description",
+                    "createdAt",
+                    "updatedAt",
+                    "module_id",
+                    "module_order",
+                  ],
+                },
+                order: [["lesson_order", "ASC"]],
+                include: [
+                  {
+                    model: progress_users,
+                    where: { user_id: userId },
+                    attributes: ["is_completed"],
+                    required: false,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!course) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+
+      // Count the number of users enrolled in the course
+      const enrollmentCount = await enrollments.count({
+        where: { course_id: course.id },
+      });
+
+      // Fetch the enrollment for the specified user and course, excluding specific fields
+      const enrollment = await enrollments.findOne({
+        where: { user_id: userId, course_id: course.id },
+        attributes: {
+          exclude: [
+            "createdAt",
+            "updatedAt",
+            "id",
+            "price",
+            "currency",
+            "status",
+            "enrolled_through",
+            "order_id",
+            "transaction_id",
+            "last_done_module_order",
+            "last_done_lesson_order",
+            "last_done_lesson_id",
+          ],
+        },
+      });
+
+      // Fetch the number of completed lessons for the user
+      const completedLessons = await progress_users.count({
+        where: {
+          user_id: userId,
+          course_id: course.id,
+          is_completed: true,
+        },
+      });
+
+      // Calculate the progress percentage
+      const totalLessons = course.modules.reduce(
+        (total, module) => total + module.lessons.length,
+        0
+      );
+      const percentageCompleted =
+        totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+      // Combine the course, enrollment, progress data, and enrollment count
+      const courseData = {
+        ...course.toJSON(),
+        enrollment: enrollment || null,
+        percentageCompleted: percentageCompleted,
+        enrollmentCount: enrollmentCount,
+      };
+
+      return res.json(courseData);
+    } catch (err) {
+      console.error("Error:", err);
+      return res.status(500).json({ error: "Something went wrong" });
+    }
+  }
+);
+
+// MARK AS DONE
+// USER PROGRESS
+router.put(
+  "/mark-as-done/user/:user_id/course/:course_id/lesson/:lesson_id",
+  async (req, res) => {
+    try {
+      const userId = parseInt(req.params.user_id, 10); // Parse to integer
+      const courseId = parseInt(req.params.course_id, 10); // Parse to integer
+      const lessonId = parseInt(req.params.lesson_id, 10); // Parse to integer
+
+      const { is_completed } = req.body;
+
+      const [userProgress, created] = await progress_users.findOrCreate({
+        // Updated model name
+        where: {
+          user_id: userId,
+          lesson_id: lessonId, // Use lesson_id instead of lessonId
+          course_id: courseId,
+        },
+        defaults: {
+          user_id: userId,
+          lesson_id: lessonId, // Use lesson_id instead of lessonId
+          course_id: courseId,
+          is_completed: is_completed, // Use is_completed instead of isCompleted
+        },
+      });
+
+      if (!created) {
+        await userProgress.update({ is_completed: is_completed }); // Use is_completed instead of isCompleted
+      }
+
+      return res.json(userProgress);
+    } catch (error) {
+      console.error("[LESSON_ID_PROGRESS]", error);
+      return res.status(500).json({ error: "Internal Error" });
+    }
+  }
+);
 
 // [PUT] UPDATE COURES TO -> PUBLISHED
 router.put(

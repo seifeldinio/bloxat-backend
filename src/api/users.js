@@ -1,7 +1,14 @@
 const express = require("express");
 
 const router = express.Router();
-const { users, enrollments, courses } = require("../../models");
+const {
+  users,
+  enrollments,
+  courses,
+  modules,
+  lessons,
+  progress_users,
+} = require("../../models");
 const passport = require("passport");
 
 const { Op } = require("sequelize");
@@ -173,42 +180,10 @@ router.get(
   async (req, res) => {
     const brand_slug = req.params.brand_slug;
 
-    // Pagination
-    let page = parseInt(req.query.page);
-    let per_page = parseInt(req.query.per_page || 10);
-    const offset = page ? page * per_page : 0;
-
-    // Search queries for enrollments and courses
-    // let searchEnrollments = req.query.searchEnrollments || "";
-    let search = req.query.search || "";
-
     try {
       const usersReturn = await users.findOne({
         where: { brand_slug: brand_slug },
-        include: [
-          {
-            model: courses,
-            limit: per_page,
-            offset: offset,
-            required: false,
-            attributes: {
-              exclude: [
-                "user_id",
-                "price",
-                "introduction_video",
-                "group_link",
-                "updatedAt",
-                "createdAt",
-              ],
-            },
-            where: {
-              id: { [Op.like]: `%${search}%` }, // Use searchCourses for courses
-              published: true, // Filter by published courses
-            },
-            // Order from newest to oldest
-            order: [["createdAt", "DESC"]],
-          },
-        ],
+
         // Don't show hash in the response
         attributes: {
           exclude: [
@@ -220,6 +195,13 @@ router.get(
             "player_id_app",
             "player_id_web",
             "country",
+            "trial_end",
+            "subscription_end",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "avatar_url",
           ],
         },
       });
@@ -231,6 +213,141 @@ router.get(
     }
   }
 );
+
+// Helper function to exclude specific attributes from an object
+const excludeAttributes = (obj, attributes) => {
+  const newObj = { ...obj };
+  attributes.forEach((attr) => delete newObj[attr]);
+  return newObj;
+};
+
+// [GET] GET USER BY brand_slug AND USER ID to see the courses all of them and the enrollments
+// Used in the student portal to get the courses of the brand and check if enrolled or not
+router.get("/users/brand/:teacher_id/:user_id", async (req, res) => {
+  const teacherId = req.params.teacher_id;
+  const userId = req.params.user_id;
+
+  // Pagination
+  const page = parseInt(req.query.page) || 0;
+  const perPage = parseInt(req.query.per_page) || 10;
+  const offset = page * perPage;
+
+  // Search queries for enrollments and courses
+  const search = req.query.search || "";
+
+  try {
+    const coursesWithEnrollments = await courses.findAll({
+      attributes: {
+        exclude: [
+          "user_id",
+          "introduction_video",
+          "group_link",
+          "updatedAt",
+          "createdAt",
+        ],
+      },
+      where: {
+        user_id: teacherId,
+        id: { [Op.like]: `%${search}%` },
+        published: true,
+      },
+      include: [
+        {
+          model: enrollments,
+          where: {
+            user_id: userId,
+          },
+          required: false,
+          attributes: {
+            exclude: [
+              "id",
+              "createdAt",
+              "updatedAt",
+              "order_id",
+              "transaction_id",
+              "last_done_module_order",
+              "last_done_lesson_order",
+              "last_done_lesson_id",
+              "price",
+              "currency",
+              "enrolled_through",
+              "status",
+            ], // Exclude these attributes
+          },
+        },
+      ],
+      limit: perPage,
+      offset,
+    });
+
+    // Modify each course to include progressPercentage
+    const coursesWithProgress = await Promise.all(
+      coursesWithEnrollments.map(async (course) => {
+        // Calculate progressPercentage for this course
+        const progressPercentage = await calculateProgressPercentage(
+          course.id,
+          userId
+        );
+
+        // Exclude one of the enrollments (if there are multiple)
+        const enrollments = course.enrollments || [];
+        const filteredEnrollments =
+          enrollments.length > 1
+            ? enrollments.filter((enrollment) => enrollment.user_id === userId)
+            : enrollments;
+
+        // Exclude specific attributes from the course object
+        const excludedAttributes = [
+          "modules",
+          "lessons",
+          "enrollment",
+          // Add more attributes to exclude here
+        ];
+        const courseData = excludeAttributes(
+          course.toJSON(),
+          excludedAttributes
+        );
+        courseData.enrollments = filteredEnrollments;
+
+        // Include progressPercentage in course object
+        return {
+          ...courseData,
+          progressPercentage,
+        };
+      })
+    );
+
+    return res.json(coursesWithProgress);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong :/" });
+  }
+});
+
+// Function to calculate progressPercentage
+async function calculateProgressPercentage(courseId, userId) {
+  // Implement your logic here to calculate progressPercentage
+  // You can query the progress_users table to count completed lessons for the given course and user
+  const completedLessonCount = await progress_users.count({
+    where: {
+      user_id: userId,
+      course_id: courseId,
+      is_completed: true,
+    },
+  });
+
+  // Query the total number of lessons in the course
+  const totalLessonCount = await lessons.count({
+    where: {
+      course_id: courseId,
+    },
+  });
+
+  // Calculate progressPercentage
+  const progressPercentage = (completedLessonCount / totalLessonCount) * 100;
+
+  return progressPercentage;
+}
 
 // [PUT] UPDATE USER
 router.put(

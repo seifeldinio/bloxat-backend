@@ -1,7 +1,13 @@
 const express = require("express");
 
 const router = express.Router();
-const { enrollments, courses, users } = require("../../models");
+const {
+  enrollments,
+  courses,
+  users,
+  modules,
+  lessons,
+} = require("../../models");
 const passport = require("passport");
 const { Op, Sequelize } = require("sequelize");
 
@@ -253,39 +259,113 @@ router.put(
 );
 
 // [GET] ENROLLMENT OF USER ID
-router.get(
-  "/enrollment/:user_id/:course_id",
-  // passport.authenticate("jwt", { session: false }),
+// level_progress_percentage automatically sets the progress based on how many lessons are done
+// done lessons / lessons.length * 100
+router.get("/enrollment/:user_id/:course_id", async (req, res) => {
+  const userId = req.params.user_id;
+  const courseId = req.params.course_id;
 
-  async (req, res) => {
-    const userId = req.params.user_id;
-    const courseId = req.params.course_id;
+  try {
+    // Fetch the user's enrollment data
+    const userEnrollment = await enrollments.findOne({
+      where: { user_id: userId, course_id: courseId },
+      attributes: {
+        exclude: ["id", "role", "createdAt", "updatedAt"],
+      },
+    });
 
-    //pagination
-    // let page = parseInt(req.query.page);
-    // let per_page = parseInt(req.query.per_page || 10);
-
-    // const offset = page ? page * per_page : 0;
-
-    try {
-      const usersReturn = await enrollments.findOne({
-        where: { user_id: userId, course_id: courseId },
-
-        //DONT SHOW HASH IN THE RESPONSE
-        attributes: {
-          exclude: ["id", "role", "createdAt", "updatedAt"],
-        },
-      });
-
-      return res.json(usersReturn);
-    } catch (err) {
-      // console.log(err);
-      return res
-        .status(500)
-        .json({ error: "Well ... Something went wrong :/" });
+    if (!userEnrollment) {
+      return res.status(404).json({ error: "Enrollment not found" });
     }
+
+    // Fetch the course data
+    const course = await courses.findOne({
+      where: { id: courseId },
+      include: [
+        {
+          model: lessons,
+          attributes: ["lesson_id"], // We only need to count lessons
+        },
+      ],
+    });
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    // Count the total number of lessons for the course
+    const totalLessons = course.lessons.length;
+
+    // Calculate the number of completed lessons
+    const completedLessons = userEnrollment.last_done_lesson_order || 0;
+
+    // Calculate the level_progress_percentage
+    const level_progress_percentage = (completedLessons / totalLessons) * 100;
+
+    // Update the userEnrollment object with the calculated percentage
+    userEnrollment.level_progress_percentage = level_progress_percentage;
+
+    return res.json(userEnrollment);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong :/" });
   }
-);
+});
+
+// [GET] ENROLLMENT OF USER ID AND COURSE SLUG
+router.get("/enrollment/slug/:course_slug/:user_id", async (req, res) => {
+  const userId = req.params.user_id;
+  const courseSlug = req.params.course_slug;
+
+  try {
+    // Fetch the course data
+    const course = await courses.findOne({
+      where: { course_slug: courseSlug },
+      include: [
+        {
+          model: lessons,
+          attributes: ["lesson_id"], // We only need to count lessons
+        },
+      ],
+    });
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    // console.log("PRINT", userId, course.id);
+
+    // Fetch the user's enrollment data
+    const userEnrollment = await enrollments.findOne({
+      where: { user_id: userId, course_id: course.id },
+      attributes: {
+        exclude: [
+          "id",
+          "role",
+          "createdAt",
+          "updatedAt",
+          "price",
+          "currency",
+          "status",
+          "enrolled_through",
+          "order_id",
+          "transaction_id",
+        ],
+      },
+    });
+
+    if (!userEnrollment) {
+      return res.status(404).json({ error: "Enrollment not found" });
+    }
+
+    // Count the total number of lessons for the course
+
+    return res.json(userEnrollment);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong :/" });
+  }
+});
 
 // [GET] ENROLLMENTS OF A COURSE WITH COURSE ID
 router.get(
