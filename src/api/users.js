@@ -221,21 +221,40 @@ const excludeAttributes = (obj, attributes) => {
   return newObj;
 };
 
-// [GET] GET USER BY brand_slug AND USER ID to see the courses all of them and the enrollments
-// Used in the student portal to get the courses of the brand and check if enrolled or not
-router.get("/users/brand/:teacher_id/:user_id", async (req, res) => {
-  const teacherId = req.params.teacher_id;
-  const userId = req.params.user_id;
-
-  // Pagination
-  const page = parseInt(req.query.page) || 0;
-  const perPage = parseInt(req.query.per_page) || 10;
-  const offset = page * perPage;
-
-  // Search queries for enrollments and courses
-  const search = req.query.search || "";
-
+// Fetch user data along with their courses and enrollments
+async function getUserDataWithCoursesAndEnrollments(
+  brandSlug,
+  userId,
+  search,
+  page,
+  perPage
+) {
   try {
+    // Fetch user data with brand information
+    const userData = await users.findOne({
+      where: { brand_slug: brandSlug },
+      attributes: {
+        exclude: [
+          "hash",
+          // "createdAt",
+          "is_admin",
+          "createdAt",
+          "updatedAt",
+          "player_id_app",
+          "player_id_web",
+          "country",
+          "trial_end",
+          "subscription_end",
+          "first_name",
+          "last_name",
+          "email",
+          "phone_number",
+          "avatar_url",
+        ],
+      },
+    });
+
+    // Fetch user's courses and enrollments
     const coursesWithEnrollments = await courses.findAll({
       attributes: {
         exclude: [
@@ -247,7 +266,7 @@ router.get("/users/brand/:teacher_id/:user_id", async (req, res) => {
         ],
       },
       where: {
-        user_id: teacherId,
+        user_id: userData.id,
         id: { [Op.like]: `%${search}%` },
         published: true,
       },
@@ -277,8 +296,33 @@ router.get("/users/brand/:teacher_id/:user_id", async (req, res) => {
         },
       ],
       limit: perPage,
-      offset,
+      offset: page * perPage,
     });
+
+    return { userData, coursesWithEnrollments };
+  } catch (error) {
+    throw error;
+  }
+}
+
+// [GET] GET USER BY brand_slug AND USER ID to see the courses all of them and the enrollments
+// Used in the student portal to get the courses of the brand and check if enrolled or not
+router.get("/users/brand/:brand_slug/:user_id", async (req, res) => {
+  const brandSlug = req.params.brand_slug;
+  const userId = req.params.user_id;
+  const page = parseInt(req.query.page) || 0;
+  const perPage = parseInt(req.query.per_page) || 10;
+  const search = req.query.search || "";
+
+  try {
+    const { userData, coursesWithEnrollments } =
+      await getUserDataWithCoursesAndEnrollments(
+        brandSlug,
+        userId,
+        search,
+        page,
+        perPage
+      );
 
     // Modify each course to include progressPercentage
     const coursesWithProgress = await Promise.all(
@@ -303,23 +347,25 @@ router.get("/users/brand/:teacher_id/:user_id", async (req, res) => {
           "enrollment",
           // Add more attributes to exclude here
         ];
-        const courseData = excludeAttributes(
-          course.toJSON(),
-          excludedAttributes
-        );
-        courseData.enrollments = filteredEnrollments;
-
-        // Include progressPercentage in course object
-        return {
-          ...courseData,
+        const courseData = {
+          ...course.toJSON(),
+          enrollments: filteredEnrollments,
           progressPercentage,
         };
+
+        return courseData;
       })
     );
 
-    return res.json(coursesWithProgress);
-  } catch (err) {
-    console.error(err);
+    // Combine user data with courses and return as a single JSON response
+    const response = {
+      ...userData.toJSON(),
+      courses: coursesWithProgress,
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ error: "Something went wrong :/" });
   }
 });
