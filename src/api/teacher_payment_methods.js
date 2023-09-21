@@ -168,6 +168,7 @@ router.get(
     try {
       const usersReturn = await users.findOne({
         where: { brand_slug: brandSlug },
+        // paymob_integrations
         include: [
           {
             model: paymob_integrations,
@@ -176,7 +177,15 @@ router.get(
               exclude: ["id", "createdAt", "updatedAt"],
             },
           },
+          {
+            model: instapay_integrations,
+            required: false,
+            attributes: {
+              exclude: ["id", "createdAt", "updatedAt"],
+            },
+          },
         ],
+
         // Don't show hash in the response
         attributes: {
           exclude: [

@@ -380,9 +380,16 @@ router.get(
       const courseSlug = req.params.course_slug;
       const userId = req.params.user_id;
 
+      // Pagination settings for modules
+      // let page = parseInt(req.query.page);
+      // let per_page = parseInt(req.query.per_page || 10);
+
+      // const offset = page ? page * per_page : 0;
+
       // Fetch the course with modules and lessons
       const course = await courses.findOne({
         where: { course_slug: courseSlug },
+
         attributes: {
           exclude: [
             "user_id",
@@ -401,9 +408,12 @@ router.get(
         include: [
           {
             model: modules,
+
             attributes: {
               exclude: ["course_id", "module_id", "createdAt", "updatedAt"],
             },
+            // offset: offset, // Apply module pagination offset
+            // limit: per_page, // Apply module pagination limit
             order: [["module_order", "ASC"]],
             include: [
               {
@@ -420,6 +430,7 @@ router.get(
                   ],
                 },
                 order: [["lesson_order", "ASC"]],
+
                 include: [
                   {
                     model: progress_users,
@@ -497,6 +508,91 @@ router.get(
     }
   }
 );
+
+// GET THE FIRST LESSON IN A COURSE AND IF THE USER IS ENROLLED OR NOT TO REDIRECT
+router.get("/courses/redirect/:course_slug/:user_id", async (req, res) => {
+  try {
+    const courseSlug = req.params.course_slug;
+    const userId = req.params.user_id;
+
+    // Fetch the course with modules and the first lesson
+    const course = await courses.findOne({
+      where: { course_slug: courseSlug },
+      attributes: {
+        exclude: [
+          // Exclude the fields you don't need here
+          "title",
+          "course_slug",
+          "thumbnail",
+          "description",
+          "price",
+          "currency",
+          "introduction_video",
+          "group_link",
+          "published",
+          "createdAt",
+          "updatedAt",
+        ],
+      },
+      include: [
+        {
+          model: lessons,
+          attributes: {
+            exclude: [
+              // Exclude the fields you don't need here
+              "lesson_id",
+              "course_id",
+              "module_id",
+              "module_order",
+              "title",
+              "lesson_order",
+              "lesson_video_url",
+              "description",
+              "createdAt",
+              "updatedAt",
+            ],
+          },
+          order: [["lesson_order", "ASC"]],
+          limit: 1, // Limit to the first lesson
+        },
+      ],
+    });
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    // Fetch the enrollment for the specified user and course, excluding specific fields
+    const enrollment = await enrollments.findOne({
+      where: { user_id: userId, course_id: course.id },
+      attributes: {
+        exclude: [
+          // Exclude the fields you don't need here
+          "id",
+          "price",
+          "currency",
+          "status",
+          "enrolled_through",
+          "order_id",
+          "transaction_id",
+          "createdAt",
+          "updatedAt",
+        ],
+      },
+    });
+
+    // Combine the course, enrollment, progress data, and enrollment count
+    const courseData = {
+      ...course.toJSON(),
+      enrollment: enrollment || null,
+    };
+
+    return res.json(courseData);
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({ error: "Something went wrong" });
+  }
+});
 
 // MARK AS DONE
 // USER PROGRESS

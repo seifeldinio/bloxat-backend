@@ -7,6 +7,7 @@ const {
   users,
   modules,
   lessons,
+  instapay_integrations,
 } = require("../../models");
 const passport = require("passport");
 const { Op, Sequelize } = require("sequelize");
@@ -105,6 +106,87 @@ router.post(
     }
   }
 );
+
+// [POST] ENROLLMENT FROM INSTAPAY
+router.post(
+  "/instapay/enroll",
+  passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    const { user_id, course_id, price, currency, teacher_id, sms } = req.body;
+
+    try {
+      const user = await users.findOne({
+        where: { id: user_id },
+      });
+
+      const course = await courses.findOne({
+        where: { id: course_id },
+      });
+
+      // Extract the name from the SMS
+      const nameInSMS = extractNameFromSMS(sms);
+
+      if (!nameInSMS) {
+        return res.status(400).json({ message: "Name not found in SMS" });
+      }
+
+      // Find the instapay integration for the user
+      const integration = await instapay_integrations.findOne({
+        where: { user_id: teacher_id },
+      });
+
+      if (!integration) {
+        return res
+          .status(400)
+          .json({ message: "Instapay integration not found" });
+      }
+
+      // Check if the length of the extracted name matches the expected length
+      const expectedLength = integration.instapay_fullname.length;
+
+      if (nameInSMS.length === expectedLength) {
+        // Create the enrollment object
+        const enrollmentsReturn = await enrollments.create({
+          user_id: user.id,
+          course_id: course.id,
+          price: price,
+          currency: currency,
+          status: "1",
+          enrolled_through: "instapay",
+        });
+
+        return res.json(enrollmentsReturn);
+      } else {
+        return res.status(400).json({ message: "Name length mismatch" });
+      }
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json(err);
+    }
+  }
+);
+
+// Function to extract the name from the SMS
+function extractNameFromSMS(sms) {
+  // Split the SMS into words
+  const words = sms.split(" ");
+
+  // Initialize an array to store potential name parts
+  const potentialNameParts = [];
+
+  // Iterate through the words to find name parts
+  for (const word of words) {
+    // Check if the word contains letters and asterisks
+    if (/^[A-Za-z*]+$/.test(word)) {
+      potentialNameParts.push(word);
+    }
+  }
+
+  // Combine the potential name parts into the name
+  const nameInSMS = potentialNameParts.join(" ");
+
+  return nameInSMS.length > 0 ? nameInSMS : null;
+}
 
 // [PUT] ENROLLMENT [!!LESSON] (TO UPDATE USER'S PROGRESS LESSONS)
 router.put(
