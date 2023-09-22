@@ -313,11 +313,7 @@ router.get("/courses/id/content/:id", async (req, res) => {
         exclude: [
           "user_id",
           "course_slug",
-          "thumbnail",
-          "description",
-          "price",
           "group_link",
-          "published",
           "createdAt",
           "updatedAt",
         ],
@@ -373,139 +369,166 @@ router.get("/courses/id/content/:id", async (req, res) => {
 });
 
 // [GET] COURSE CONTENT FOR STUDENTS
+const fetchCourseWithModulesAndLessons = async (courseSlug, userId) => {
+  try {
+    const course = await courses.findOne({
+      where: { course_slug: courseSlug },
+      attributes: {
+        exclude: [
+          "user_id",
+          "course_slug",
+          "thumbnail",
+          "description",
+          "price",
+          "group_link",
+          "published",
+          "createdAt",
+          "updatedAt",
+          "currency",
+          "introduction_video",
+        ],
+      },
+      include: [
+        {
+          model: modules,
+          attributes: {
+            exclude: ["course_id", "module_id", "createdAt", "updatedAt"],
+          },
+          order: [["module_order", "ASC"]],
+          include: [
+            {
+              model: lessons,
+              attributes: {
+                exclude: [
+                  "course_id",
+                  "lesson_video_url",
+                  "description",
+                  "createdAt",
+                  "updatedAt",
+                  "module_id",
+                ],
+              },
+              order: [["lesson_order", "ASC"]],
+              include: [
+                {
+                  model: progress_users,
+                  where: { user_id: userId },
+                  attributes: ["is_completed"],
+                  required: false,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      order: [
+        [modules, "module_order", "ASC"],
+        [modules, lessons, "lesson_order", "ASC"],
+      ],
+    });
+
+    return course;
+  } catch (err) {
+    console.error("Error fetching course:", err);
+    return null;
+  }
+};
+
+const fetchEnrollment = async (userId, courseId) => {
+  try {
+    const enrollment = await enrollments.findOne({
+      where: { user_id: userId, course_id: courseId },
+      attributes: {
+        exclude: [
+          "createdAt",
+          "updatedAt",
+          "id",
+          "price",
+          "currency",
+          "status",
+          "enrolled_through",
+          "order_id",
+          "transaction_id",
+          "last_done_module_order",
+          "last_done_lesson_order",
+          "last_done_lesson_id",
+        ],
+      },
+    });
+
+    return enrollment;
+  } catch (err) {
+    console.error("Error fetching enrollment:", err);
+    return null;
+  }
+};
+
+const countCompletedLessons = async (userId, courseId) => {
+  try {
+    const completedLessons = await progress_users.count({
+      where: {
+        user_id: userId,
+        course_id: courseId,
+        is_completed: true,
+      },
+    });
+
+    return completedLessons;
+  } catch (err) {
+    console.error("Error counting completed lessons:", err);
+    return 0;
+  }
+};
+
+const calculateProgressPercentage = (totalLessons, completedLessons) => {
+  return totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+};
+
+const getCourseContent = async (courseSlug, userId) => {
+  try {
+    const course = await fetchCourseWithModulesAndLessons(courseSlug, userId);
+
+    if (!course) {
+      return null;
+    }
+
+    const { id: courseId } = course;
+    const enrollment = await fetchEnrollment(userId, courseId);
+    const completedLessons = await countCompletedLessons(userId, courseId);
+
+    const totalLessons = course.modules.reduce(
+      (total, module) => total + module.lessons.length,
+      0
+    );
+    const percentageCompleted = calculateProgressPercentage(
+      totalLessons,
+      completedLessons
+    );
+
+    return {
+      ...course.toJSON(),
+      enrollment: enrollment || null,
+      percentageCompleted,
+    };
+  } catch (err) {
+    console.error("Error:", err);
+    return null;
+  }
+};
+
 router.get(
   "/courses/course-content/:course_slug/:user_id",
   async (req, res) => {
-    try {
-      const courseSlug = req.params.course_slug;
-      const userId = req.params.user_id;
+    const courseSlug = req.params.course_slug;
+    const userId = req.params.user_id;
 
-      // Pagination settings for modules
-      // let page = parseInt(req.query.page);
-      // let per_page = parseInt(req.query.per_page || 10);
+    const courseContent = await getCourseContent(courseSlug, userId);
 
-      // const offset = page ? page * per_page : 0;
-
-      // Fetch the course with modules and lessons
-      const course = await courses.findOne({
-        where: { course_slug: courseSlug },
-
-        attributes: {
-          exclude: [
-            "user_id",
-            "course_slug",
-            "thumbnail",
-            "description",
-            "price",
-            "group_link",
-            "published",
-            "createdAt",
-            "updatedAt",
-            "currency",
-            "introduction_video",
-          ],
-        },
-        include: [
-          {
-            model: modules,
-
-            attributes: {
-              exclude: ["course_id", "module_id", "createdAt", "updatedAt"],
-            },
-            // offset: offset, // Apply module pagination offset
-            // limit: per_page, // Apply module pagination limit
-            order: [["module_order", "ASC"]],
-            include: [
-              {
-                model: lessons,
-                attributes: {
-                  exclude: [
-                    "course_id",
-                    "lesson_video_url",
-                    "description",
-                    "createdAt",
-                    "updatedAt",
-                    "module_id",
-                    "module_order",
-                  ],
-                },
-                order: [["lesson_order", "ASC"]],
-
-                include: [
-                  {
-                    model: progress_users,
-                    where: { user_id: userId },
-                    attributes: ["is_completed"],
-                    required: false,
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      });
-
-      if (!course) {
-        return res.status(404).json({ error: "Course not found" });
-      }
-
-      // Count the number of users enrolled in the course
-      const enrollmentCount = await enrollments.count({
-        where: { course_id: course.id },
-      });
-
-      // Fetch the enrollment for the specified user and course, excluding specific fields
-      const enrollment = await enrollments.findOne({
-        where: { user_id: userId, course_id: course.id },
-        attributes: {
-          exclude: [
-            "createdAt",
-            "updatedAt",
-            "id",
-            "price",
-            "currency",
-            "status",
-            "enrolled_through",
-            "order_id",
-            "transaction_id",
-            "last_done_module_order",
-            "last_done_lesson_order",
-            "last_done_lesson_id",
-          ],
-        },
-      });
-
-      // Fetch the number of completed lessons for the user
-      const completedLessons = await progress_users.count({
-        where: {
-          user_id: userId,
-          course_id: course.id,
-          is_completed: true,
-        },
-      });
-
-      // Calculate the progress percentage
-
-      const totalLessons = course.modules.reduce(
-        (total, module) => total + module.lessons.length,
-        0
-      );
-      const percentageCompleted =
-        totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-
-      // Combine the course, enrollment, progress data, and enrollment count
-      const courseData = {
-        ...course.toJSON(),
-        enrollment: enrollment || null,
-        percentageCompleted: percentageCompleted,
-        enrollmentCount: enrollmentCount,
-      };
-
-      return res.json(courseData);
-    } catch (err) {
-      console.error("Error:", err);
-      return res.status(500).json({ error: "Something went wrong" });
+    if (!courseContent) {
+      return res.status(404).json({ error: "Course not found" });
     }
+
+    return res.json(courseContent);
   }
 );
 
@@ -515,59 +538,41 @@ router.get("/courses/redirect/:course_slug/:user_id", async (req, res) => {
     const courseSlug = req.params.course_slug;
     const userId = req.params.user_id;
 
-    // Fetch the course with modules and the first lesson
+    // Fetch the course
     const course = await courses.findOne({
       where: { course_slug: courseSlug },
-      attributes: {
-        exclude: [
-          // Exclude the fields you don't need here
-          "title",
-          "course_slug",
-          "thumbnail",
-          "description",
-          "price",
-          "currency",
-          "introduction_video",
-          "group_link",
-          "published",
-          "createdAt",
-          "updatedAt",
-        ],
-      },
-      include: [
-        {
-          model: lessons,
-          attributes: {
-            exclude: [
-              // Exclude the fields you don't need here
-              "lesson_id",
-              "course_id",
-              "module_id",
-              "module_order",
-              "title",
-              "lesson_order",
-              "lesson_video_url",
-              "description",
-              "createdAt",
-              "updatedAt",
-            ],
-          },
-          order: [["lesson_order", "ASC"]],
-          limit: 1, // Limit to the first lesson
-        },
-      ],
+      attributes: ["id"],
     });
 
     if (!course) {
       return res.status(404).json({ error: "Course not found" });
     }
 
+    // Fetch the first module of the course
+    const firstModule = await modules.findOne({
+      where: { course_id: course.id },
+      attributes: ["id"],
+      order: [["module_order", "ASC"]],
+    });
+
+    if (!firstModule) {
+      return res
+        .status(404)
+        .json({ error: "No modules found for this course" });
+    }
+
+    // Fetch the first lesson of the first module
+    const firstLesson = await lessons.findOne({
+      where: { module_id: firstModule.id },
+      attributes: ["id"],
+      order: [["lesson_order", "ASC"]],
+    });
+
     // Fetch the enrollment for the specified user and course, excluding specific fields
     const enrollment = await enrollments.findOne({
       where: { user_id: userId, course_id: course.id },
       attributes: {
         exclude: [
-          // Exclude the fields you don't need here
           "id",
           "price",
           "currency",
@@ -581,13 +586,16 @@ router.get("/courses/redirect/:course_slug/:user_id", async (req, res) => {
       },
     });
 
-    // Combine the course, enrollment, progress data, and enrollment count
-    const courseData = {
-      ...course.toJSON(),
+    // Create the desired response structure
+    const jsonResponse = {
+      course_id: course.id,
+      id: course.id,
+      user_id: userId,
+      lessons: firstLesson ? [{ id: firstLesson.id }] : [],
       enrollment: enrollment || null,
     };
 
-    return res.json(courseData);
+    return res.json(jsonResponse);
   } catch (err) {
     console.error("Error:", err);
     return res.status(500).json({ error: "Something went wrong" });
@@ -772,52 +780,96 @@ router.put(
 );
 
 // [PUT] UPDATE COURSE DETAILS
-router.put(
+// [PATCH] PARTIAL UPDATE COURSE DETAILS
+router.patch(
   "/courses/details/:id",
 
   passport.authenticate("jwt", { session: false }),
 
   async (req, res) => {
     const id = req.params.id;
-    const {
-      title,
-      // course_slug,
-      description,
-      price,
-      published,
-      currency,
-      // introduction_video,
-      // group_link,
-      // level,
-    } = req.body;
+    const allowedFields = [
+      "title",
+      "description",
+      "price",
+      "published",
+      "currency",
+      "thumbnail",
+      // Add other fields you want to allow for partial updates here
+    ];
 
     try {
       const coursesReturn = await courses.findOne({
         where: { id: id },
       });
 
-      //update values to the value in req body
-      coursesReturn.title = title;
-      // coursesReturn.course_slug = course_slug;
-      coursesReturn.description = description;
-      coursesReturn.price = price;
-      coursesReturn.published = published;
-      coursesReturn.currency = currency;
+      if (!coursesReturn) {
+        return res.status(404).json({ error: "Course not found" });
+      }
 
-      // coursesReturn.introduction_video = introduction_video;
-      // coursesReturn.group_link = group_link;
-      // coursesReturn.level = level;
+      // Iterate through allowed fields and update if present in the request body
+      allowedFields.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          coursesReturn[field] = req.body[field];
+        }
+      });
 
       await coursesReturn.save();
 
       return res.json(coursesReturn);
     } catch (err) {
-      // console.log(err);
-      return res
-        .status(500)
-        .json({ error: "Well ... Something went wrong :/" });
+      console.error(err);
+      return res.status(500).json({ error: "Something went wrong :/" });
     }
   }
 );
+
+// router.put(
+//   "/courses/details/:id",
+
+//   passport.authenticate("jwt", { session: false }),
+
+//   async (req, res) => {
+//     const id = req.params.id;
+//     const {
+//       title,
+//       // course_slug,
+//       description,
+//       price,
+//       published,
+//       currency,
+//       // introduction_video,
+//       // group_link,
+//       // level,
+//     } = req.body;
+
+//     try {
+//       const coursesReturn = await courses.findOne({
+//         where: { id: id },
+//       });
+
+//       //update values to the value in req body
+//       coursesReturn.title = title;
+//       // coursesReturn.course_slug = course_slug;
+//       coursesReturn.description = description;
+//       coursesReturn.price = price;
+//       coursesReturn.published = published;
+//       coursesReturn.currency = currency;
+
+//       // coursesReturn.introduction_video = introduction_video;
+//       // coursesReturn.group_link = group_link;
+//       // coursesReturn.level = level;
+
+//       await coursesReturn.save();
+
+//       return res.json(coursesReturn);
+//     } catch (err) {
+//       // console.log(err);
+//       return res
+//         .status(500)
+//         .json({ error: "Well ... Something went wrong :/" });
+//     }
+//   }
+// );
 
 module.exports = router;

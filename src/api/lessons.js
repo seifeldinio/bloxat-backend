@@ -107,7 +107,42 @@ router.get(
   }
 );
 
-// GET LESSON BY ID
+// GET LESSON BY ID FOR EDITING
+router.get("/lessons/:course_id/edit/:lesson_id/", async (req, res) => {
+  try {
+    const { lesson_id, course_id } = req.params;
+
+    const course = await findCourseById(course_id);
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const currentLesson = await findLesson(lesson_id, course.id);
+
+    if (!currentLesson) {
+      return res.status(404).json({ error: "Lesson not found" });
+    }
+
+    // Create the lessonData object with specific properties
+    const lessonData = {
+      lesson_id: currentLesson.id,
+      id: currentLesson.id,
+      course_id: currentLesson.course_id,
+      title: currentLesson.title,
+      lesson_order: currentLesson.lesson_order,
+      lesson_video_url: currentLesson.lesson_video_url,
+      description: currentLesson.description,
+      resources: currentLesson.resources, // Include resources
+    };
+
+    return res.json(lessonData);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Something went wrong :/" });
+  }
+});
+
+// GET LESSON BY ID FOR WATCHING
 router.get("/lessons/:course_slug/:lesson_id/:user_id", async (req, res) => {
   try {
     const { lesson_id, course_slug, user_id } = req.params;
@@ -122,10 +157,8 @@ router.get("/lessons/:course_slug/:lesson_id/:user_id", async (req, res) => {
       return res.status(404).json({ error: "Lesson not found" });
     }
 
-    const nextLesson = await findNextLesson(
-      currentLesson.lesson_order,
-      course.id
-    );
+    const nextLesson = await findNextLesson(currentLesson);
+
     const userEnrollment = await findUserEnrollment(user_id, course.id);
 
     if (!userEnrollment) {
@@ -184,20 +217,55 @@ async function findLesson(lessonId, courseId) {
         },
       },
     ],
+    order: [[{ model: resources, as: "resources" }, "resource_order", "ASC"]],
   });
 }
-
-async function findNextLesson(lessonOrder, courseId) {
-  return await lessons.findOne({
-    where: {
-      course_id: courseId,
-      lesson_order: {
-        [Op.gt]: lessonOrder,
+const findNextLesson = async (currentLesson) => {
+  try {
+    // Find the next lesson in the current module with a higher lesson_order
+    const nextLessonInSameModule = await lessons.findOne({
+      where: {
+        module_id: currentLesson.module_id,
+        lesson_order: {
+          [Op.gt]: currentLesson.lesson_order,
+        },
       },
-    },
-    order: [["lesson_order", "ASC"]],
-  });
-}
+      order: [["lesson_order", "ASC"]],
+    });
+
+    if (nextLessonInSameModule) {
+      return nextLessonInSameModule;
+    }
+
+    // If there are no more lessons in the current module, find the next module
+    const currentModule = await modules.findByPk(currentLesson.module_id);
+    const nextModuleOrder = currentModule.module_order + 1;
+
+    const nextModule = await modules.findOne({
+      where: {
+        course_id: currentLesson.course_id,
+        module_order: nextModuleOrder,
+      },
+    });
+
+    if (nextModule) {
+      // Find the first lesson in the next module
+      const firstLessonNextModule = await lessons.findOne({
+        where: {
+          module_id: nextModule.id,
+          lesson_order: 0,
+        },
+      });
+
+      return firstLessonNextModule;
+    }
+
+    return null; // Return null if there are no more lessons
+  } catch (error) {
+    console.error("Error in findNextLesson:", error);
+    return null; // Return null or handle the error as needed
+  }
+};
 
 async function findUserEnrollment(userId, courseId) {
   return await enrollments.findOne({
@@ -239,6 +307,21 @@ async function findProgressUser(userId, lessonId, courseId) {
   });
 }
 
+// find cousre by id
+async function findCourseById(courseId) {
+  return await courses.findOne({
+    where: {
+      id: courseId,
+    },
+    include: [
+      {
+        model: lessons,
+        attributes: ["id", "lesson_order"],
+      },
+    ],
+  });
+}
+
 // [PUT] UPDATE LESSON
 router.put(
   "/lessons/:id",
@@ -274,7 +357,6 @@ router.put(
 router.delete(
   "/lessons/:id",
   passport.authenticate("jwt", { session: false }),
-
   async (req, res) => {
     const id = req.params.id;
 
@@ -285,12 +367,125 @@ router.delete(
         },
       });
 
+      if (!lesson) {
+        return res.status(404).json({ message: "Lesson not found" });
+      }
+
+      const courseId = lesson.course_id;
+
+      // Find the course associated with the lesson
+      const course = await courses.findOne({
+        where: {
+          id: courseId,
+        },
+        include: [
+          {
+            model: lessons,
+            as: "lessons",
+          },
+        ],
+      });
+
+      if (!course) {
+        return res.status(404).json({ message: "Course not found" });
+      }
+
+      // Check if the course has only one lesson
+      if (course.lessons.length === 1) {
+        // Update the course's published status to false
+        await courses.update(
+          { published: false },
+          {
+            where: {
+              id: courseId,
+            },
+          }
+        );
+      }
+
+      // Delete the lesson
       await lesson.destroy();
 
       return res.json({ message: "Lesson Deleted" });
     } catch (err) {
-      // console.log(err);
+      console.error(err);
       return res.status(500).json(err);
+    }
+  }
+);
+
+// REORDER LESSONS
+router.put(
+  "/reorder/modules/:module_id/lessons",
+
+  passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const { list } = req.body;
+    const { module_id } = req.params;
+
+    try {
+      // Check if the module exists
+      const module = await modules.findOne({ where: { id: module_id } });
+
+      if (!module) {
+        return res.status(404).json({ error: "Module not found" });
+      }
+
+      for (let item of list) {
+        await lessons.update(
+          { lesson_order: item.lesson_order },
+          { where: { id: item.lesson_id, module_id: module_id } }
+        );
+      }
+
+      console.log("HERERERJKLEJWSRKLESJRS", list);
+
+      return res.status(200).send("Success");
+    } catch (err) {
+      console.error("Error updating modules:", err); // Log the error for debugging
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
+// [PATCH] PARTIAL UPDATE COURSE DETAILS
+router.patch(
+  "/lesson/details/:lesson_id",
+
+  passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const id = req.params.lesson_id;
+    const allowedFields = [
+      "title",
+      "lesson_video_url",
+      "description",
+      // Add other fields you want to allow for partial updates here
+    ];
+
+    try {
+      const lessonReturn = await lessons.findOne({
+        where: { id: id },
+      });
+
+      if (!lessonReturn) {
+        return res.status(404).json({ error: "Lesson not found" });
+      }
+
+      // Iterate through allowed fields and update if present in the request body
+      allowedFields.forEach((field) => {
+        if (req.body[field] !== undefined) {
+          lessonReturn[field] = req.body[field];
+        }
+      });
+
+      await lessonReturn.save();
+
+      return res.json(lessonReturn);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Something went wrong :/" });
     }
   }
 );

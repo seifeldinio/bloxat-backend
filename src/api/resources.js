@@ -96,4 +96,31 @@ router.delete(
   }
 );
 
+// REORDER MODULES
+router.put(
+  "/reorder/resources",
+
+  passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const { list } = req.body;
+
+    try {
+      for (let item of list) {
+        await resources.update(
+          { resource_order: item.resource_order },
+          { where: { id: item.id } }
+        );
+      }
+
+      console.log("HERERERJKLEJWSRKLESJRS", list);
+
+      return res.status(200).send("Success");
+    } catch (err) {
+      console.error("Error updating modules:", err); // Log the error for debugging
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
+  }
+);
+
 module.exports = router;
