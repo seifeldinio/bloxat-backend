@@ -254,6 +254,7 @@ router.put(
 
       return res.json(paymobMethodReturn);
     } catch (err) {
+      console.log(err);
       return res.status(500).json({ error: "Something went wrong :/" });
     }
   }

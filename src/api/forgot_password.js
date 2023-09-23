@@ -21,7 +21,7 @@ const transporter = nodemailer.createTransport({
 
   host: "smtp.titan.email",
   auth: {
-    user: "support@roboot.io",
+    user: "noreply@bloxat.app",
     pass: process.env.SUPPORTMAIL_PASS,
   },
 });
@@ -29,7 +29,7 @@ const transporter = nodemailer.createTransport({
 const sendOTPEmail = (email, yourOtp, res) => {
   //send email
   const mailOptions = {
-    from: "support@roboot.io",
+    from: "noreply@bloxat.app",
     to: email,
     subject: "Bloxat OTP",
     html: `<p>Forgot your password? no worries.</p> <p>Copy this OTP and paste it to change your password.</p> <p>NOTE: OTP expires after 5 minutes.</p> <p>Your OTP: ${yourOtp} </p>`,
@@ -80,6 +80,45 @@ async function createOtp(params, callback) {
 }
 
 //VALIDATE OTP
+async function verifyOtp(params, callback) {
+  try {
+    const { hash, email, otp } = params;
+
+    if (!hash || !email || !otp) {
+      return callback("Invalid parameters");
+    }
+
+    // Split the hash into hashValue and expires
+    const [hashValue, expires] = hash.split(".");
+
+    if (!hashValue || !expires) {
+      return callback("Invalid hash format");
+    }
+
+    // Verify OTP expiration
+    const now = Date.now();
+    if (now > parseInt(expires)) {
+      return callback("OTP Expired");
+    }
+
+    // Calculate the hash and compare
+    const data = `${email}.${otp}.${expires}`;
+    const newCalculateHash = crypto
+      .createHmac("sha256", key)
+      .update(data)
+      .digest("hex");
+
+    if (newCalculateHash === hashValue) {
+      return callback(null, "Success");
+    } else {
+      return callback("Invalid OTP");
+    }
+  } catch (error) {
+    console.error("Error in verifyOtp:", error);
+    return callback("An error occurred while verifying OTP");
+  }
+}
+
 async function verifyOtp(params, callback) {
   let [hashValue, expires] = params.hash.split(".");
 

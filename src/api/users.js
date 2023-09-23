@@ -8,6 +8,7 @@ const {
   modules,
   lessons,
   progress_users,
+  sequelize,
 } = require("../../models");
 const passport = require("passport");
 
@@ -36,7 +37,7 @@ router.post("/users", async (req, res) => {
     });
     return res.json(usersReturn);
   } catch (err) {
-    // console.log(err);
+    console.log(err);
     return res.status(500).json(err);
   }
 });
@@ -267,8 +268,15 @@ async function getUserDataWithCoursesAndEnrollments(
       },
       where: {
         user_id: userData.id,
-        id: { [Op.like]: `%${search}%` },
         published: true,
+        [Op.or]: [
+          {
+            title: { [Op.like]: `%${search}%` },
+          },
+          {
+            description: { [Op.like]: `%${search}%` },
+          },
+        ],
       },
       include: [
         {
@@ -466,6 +474,38 @@ router.put(
   }
 );
 
+// [PUT] UPDATE USER BRAND CURRENCY
+router.put(
+  "/users/brand/currency/:id",
+
+  passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const id = req.params.id;
+    const { brand_currency } = req.body;
+
+    try {
+      const usersReturn = await users.findOne({
+        where: { id: id },
+      });
+
+      //update values to the value in req body
+      usersReturn.brand_currency = brand_currency;
+
+      // usersReturn.phone_number = phone_number;
+      // usersReturn.country = country;
+
+      await usersReturn.save();
+
+      return res.json(usersReturn);
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
 // [GET] GET ALL USERS WITH COUNT
 router.get(
   "/countUsers/",
@@ -519,6 +559,43 @@ router.get(
     }
   }
 );
+//
+
+//// [GET] USER'S ENROLLMENTS AND HOW MANY GOT DONE
+// Define an endpoint to get enrolled courses and check completion for all courses
+router.get("/dashboard/progress/:user_id", async (req, res) => {
+  const userId = req.params.user_id;
+
+  try {
+    // Retrieve the count of enrolled courses for the user
+    const enrolledCourseCount = await countEnrolledCourses(userId);
+
+    return res.json({
+      enrolledCourseCount,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Placeholder function to count enrolled courses for a user
+const countEnrolledCourses = async (userId) => {
+  try {
+    // Implement your logic to count enrolled courses for the user
+    // Replace this with your actual implementation
+    const userEnrollments = await enrollments.findAll({
+      where: {
+        user_id: userId,
+      },
+    });
+
+    return userEnrollments.length; // Return the count of enrollments
+  } catch (error) {
+    console.error("Error counting enrolled courses:", error);
+    throw error;
+  }
+};
 
 // [GET] GET ALL USERS WITH COUNT AND WITH THEIR ENROLLMENTS
 router.get(
@@ -603,5 +680,80 @@ router.get(
     }
   }
 );
+
+// COMPARE COURSE REVENUS
+router.get("/analytics/compare-courses/:user_id", async (req, res) => {
+  try {
+    const userId = req.params.user_id;
+
+    // Query the database to fetch courses associated with the teacher's user_id
+    const teacherCourses = await courses.findAll({
+      where: {
+        user_id: userId, // Assuming user_id represents the teacher's ID
+      },
+      limit: 9,
+    });
+
+    // Calculate the total earnings and total sales for each teacher's course
+    const courseEarnings = await Promise.all(
+      teacherCourses.map(async (course) => {
+        const total = await sequelize.query(
+          `
+          SELECT
+            SUM(e.price) AS total
+          FROM enrollments e
+          WHERE e.course_id = :courseId
+          `,
+          {
+            replacements: { courseId: course.id },
+            type: sequelize.QueryTypes.SELECT,
+          }
+        );
+
+        const sales = await sequelize.query(
+          `
+          SELECT
+            COUNT(*) AS sales
+          FROM enrollments e
+          WHERE e.course_id = :courseId
+          `,
+          {
+            replacements: { courseId: course.id },
+            type: sequelize.QueryTypes.SELECT,
+          }
+        );
+
+        return {
+          name: course.title,
+          total: parseInt(total[0]?.total || 0), // Parse the total as an integer
+          sales: parseInt(sales[0]?.sales || 0), // Parse sales as an integer
+        };
+      })
+    );
+
+    const totalRevenue = courseEarnings.reduce(
+      (acc, curr) => acc + curr.total,
+      0
+    );
+
+    const totalSales = courseEarnings.reduce(
+      (acc, curr) => acc + curr.sales,
+      0
+    );
+
+    return res.json({
+      data: courseEarnings,
+      totalRevenue: parseInt(totalRevenue), // Parse totalRevenue as an integer
+      totalSales,
+    });
+  } catch (error) {
+    console.error("[GET_ANALYTICS]", error);
+    return res.status(500).json({
+      data: [],
+      totalRevenue: 0,
+      totalSales: 0,
+    });
+  }
+});
 
 module.exports = router;

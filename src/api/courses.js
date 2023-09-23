@@ -9,6 +9,10 @@ const {
   lessons,
   enrollments,
   progress_users,
+  users,
+  paymob_integrations,
+  instapay_integrations,
+  sequelize,
 } = require("../../models");
 
 // const { Op } = require("sequelize");
@@ -18,18 +22,12 @@ const {
 router.post(
   "/courses",
   passport.authenticate("jwt", { session: false }),
-
   async (req, res) => {
     const {
       user_id,
       title,
       course_slug,
-      // thumbnail,
-      // description,
-      // price,
-      // introduction_video,
-      // group_link,
-      // level,
+      // other course properties
     } = req.body;
 
     try {
@@ -37,16 +35,22 @@ router.post(
         user_id,
         title,
         course_slug,
-        // thumbnail,
-        // description,
-        // price,
-        // introduction_video,
-        // group_link,
-        // level,
+        // other course properties
       });
+
+      // Enroll the user who created the course
+      await enrollments.create({
+        user_id,
+        course_id: coursesReturn.id, // Use the course ID returned when creating the course
+        price: 0, // You can set the price to 0 or adjust it as needed
+        currency: "N/A", // Set the appropriate currency
+        status: "1",
+        enrolled_through: "auto", // You can set this to indicate enrollment during course creation
+      });
+
       return res.json(coursesReturn);
     } catch (err) {
-      // console.log(err);
+      console.log(err);
       return res.status(500).json(err);
     }
   }
@@ -63,7 +67,7 @@ router.get(
 
     //pagination
     let page = parseInt(req.query.page);
-    let per_page = parseInt(req.query.per_page || 10);
+    let per_page = parseInt(req.query.per_page || 50);
 
     const offset = page ? page * per_page : 0;
 
@@ -201,19 +205,11 @@ router.get(
 // [GET] GET COURSE FOR CHECKOUT details
 router.get(
   "/courses/slug/checkout-details/:course_slug",
-
   // passport.authenticate("jwt", { session: false }),
-
   async (req, res) => {
-    //pagindation
-    // let page = parseInt(req.query.page);
-    // let per_page = parseInt(req.query.per_page || 10);
-
-    // const offset = page ? page * per_page : 0;
-
     const courseSlug = req.params.course_slug;
     try {
-      const coursesReturn = await courses.findOne({
+      const courseDetails = await courses.findOne({
         where: { course_slug: courseSlug },
         attributes: {
           exclude: [
@@ -226,7 +222,27 @@ router.get(
         },
       });
 
-      return res.json(coursesReturn);
+      if (!courseDetails) {
+        return res.status(404).json({ error: "Course not found" });
+      }
+
+      // You can fetch the user_id and brand_currency here, assuming it's from a user model
+      const user = await users.findByPk(courseDetails.user_id, {
+        attributes: ["user_id", "brand_currency"],
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      // Include user_id and brand_currency in the response
+      const response = {
+        ...courseDetails.toJSON(),
+        user_id: user.user_id,
+        brand_currency: user.brand_currency,
+      };
+
+      return res.json(response);
     } catch (err) {
       return res
         .status(500)
@@ -296,6 +312,62 @@ router.get(
     }
   }
 );
+
+// GET COURSE BY ID FOR HOME DASHBOARD PAGE (IF IT'S PUBLISHED .. IF PAYMENT METHOD SETUP .. AND THE BRAND SLUG FOR THE VIEW PAGE)
+router.get("/warnings/course/:id", async (req, res) => {
+  const courseId = req.params.id;
+
+  try {
+    const course = await courses.findOne({
+      where: { id: courseId },
+    });
+
+    if (!course) {
+      return res.status(404).json({ error: "Course not found" });
+    }
+
+    const isCoursePublished = course.published;
+    const userId = course.user_id;
+
+    const user = await users.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const paymobIntegration = await paymob_integrations.findOne({
+      where: { user_id: userId },
+    });
+
+    const paymob_enabled = paymobIntegration
+      ? paymobIntegration.paymob_enabled
+      : false;
+
+    const instapayIntegration = await instapay_integrations.findOne({
+      where: { user_id: userId },
+    });
+
+    const instapay_enabled = instapayIntegration
+      ? instapayIntegration.instapay_enabled
+      : false;
+
+    const brandSlug = user.brand_slug;
+
+    return res.json({
+      courseId: course.id,
+      isCoursePublished,
+      userId,
+      paymob_enabled,
+      instapay_enabled,
+      brandSlug,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: "Something went wrong :/" });
+  }
+});
 
 // [GET] COURSE CONTENT FOR EDITING BY ID
 router.get("/courses/id/content/:id", async (req, res) => {
@@ -375,7 +447,7 @@ const fetchCourseWithModulesAndLessons = async (courseSlug, userId) => {
       where: { course_slug: courseSlug },
       attributes: {
         exclude: [
-          "user_id",
+          // "user_id",
           "course_slug",
           "thumbnail",
           "description",
@@ -538,10 +610,10 @@ router.get("/courses/redirect/:course_slug/:user_id", async (req, res) => {
     const courseSlug = req.params.course_slug;
     const userId = req.params.user_id;
 
-    // Fetch the course
+    // Fetch the course, including the user_id
     const course = await courses.findOne({
       where: { course_slug: courseSlug },
-      attributes: ["id"],
+      attributes: ["id", "user_id"], // Select both id and user_id
     });
 
     if (!course) {
@@ -590,7 +662,7 @@ router.get("/courses/redirect/:course_slug/:user_id", async (req, res) => {
     const jsonResponse = {
       course_id: course.id,
       id: course.id,
-      user_id: userId,
+      user_id: course.user_id, // Include the user_id from the course
       lessons: firstLesson ? [{ id: firstLesson.id }] : [],
       enrollment: enrollment || null,
     };

@@ -54,11 +54,11 @@ module.exports = {
         //   notEmpty: { msg: "price cannot be empty" },
         // },
       },
-      currency: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        defaultValue: "EGP",
-      },
+      // currency: {
+      //   type: DataTypes.STRING,
+      //   allowNull: true,
+      //   defaultValue: "EGP",
+      // },
       introduction_video: {
         type: DataTypes.STRING,
         allowNull: true,

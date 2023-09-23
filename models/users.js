@@ -76,7 +76,7 @@ module.exports = (sequelize, DataTypes) => {
       phone_number: {
         type: DataTypes.STRING,
         allowNull: false,
-        unique: true,
+        // unique: true,
         validate: {
           notNull: { msg: "phone_number cannot be empty" },
           notEmpty: { msg: "phone_number cannot be empty" },
@@ -112,6 +112,11 @@ module.exports = (sequelize, DataTypes) => {
       brand_logo_dark: {
         type: DataTypes.STRING,
         allowNull: true,
+      },
+      brand_currency: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: "EGP",
       },
       trial_end: {
         allowNull: true,

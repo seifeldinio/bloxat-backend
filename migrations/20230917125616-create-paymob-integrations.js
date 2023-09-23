@@ -21,7 +21,7 @@ module.exports = {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      iframe_id: {
+      online_card_iframe_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
         defaultValue: null,
@@ -44,15 +44,15 @@ module.exports = {
         allowNull: false,
         defaultValue: false,
       },
-      installment_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      installment_enabled: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
+      // installment_id: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      // },
+      // installment_enabled: {
+      //   type: DataTypes.BOOLEAN,
+      //   allowNull: false,
+      //   defaultValue: false,
+      // },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE,

@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: null,
       },
-      iframe_id: {
+      online_card_iframe_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
         defaultValue: null,
@@ -57,16 +57,16 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: false,
       },
-      installment_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        defaultValue: null,
-      },
-      installment_enabled: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false,
-      },
+      // installment_id: {
+      //   type: DataTypes.INTEGER,
+      //   allowNull: true,
+      //   defaultValue: null,
+      // },
+      // installment_enabled: {
+      //   type: DataTypes.BOOLEAN,
+      //   allowNull: false,
+      //   defaultValue: false,
+      // },
     },
     {
       sequelize,
