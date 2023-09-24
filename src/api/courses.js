@@ -93,6 +93,55 @@ router.get(
   }
 );
 
+// [GET] ALL COURSES OF A TEACHER BY HIS user_id BUT LIMIT REPONSE TO ONLY THE COURSE TITLE, ID, SLUG AND IF PUBLISHED OR NOT
+router.get(
+  "/courses/minimal/:user_id",
+
+  // passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const user_id = req.params.user_id;
+
+    //pagination
+    let page = parseInt(req.query.page);
+    let per_page = parseInt(req.query.per_page || 50);
+
+    const offset = page ? page * per_page : 0;
+
+    //search
+    // let search = req.query.search || "";
+
+    try {
+      const coursesReturn = await courses.findAndCountAll({
+        where: { user_id: user_id },
+        attributes: {
+          exclude: [
+            "thumbnail",
+            "description",
+            "price",
+            "introduction_video",
+            "user_id",
+            "group_link",
+            "createdAt",
+            "updatedAt",
+          ],
+        },
+
+        // pagination
+        limit: per_page,
+        offset: offset,
+      });
+
+      return res.json(coursesReturn);
+    } catch (err) {
+      // console.log(err);
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
 // [GET] ALL PUBLISHED COURSES
 router.get(
   "/courses/published",
@@ -313,6 +362,43 @@ router.get(
   }
 );
 
+// [GET] GET COURSE TITLE BY ID
+router.get(
+  "/courses/title/id/:id",
+
+  // passport.authenticate("jwt", { session: false }),
+
+  async (req, res) => {
+    const courseId = req.params.id;
+    try {
+      const coursesReturn = await courses.findOne({
+        where: { id: courseId },
+        attributes: {
+          exclude: [
+            "course_id",
+            "module_id",
+            "createdAt",
+            "updatedAt",
+            "user_id",
+            "thumbnail",
+            "description",
+            "price",
+            "introduction_video",
+            "group_link",
+            "published",
+          ],
+        },
+      });
+
+      return res.json(coursesReturn);
+    } catch (err) {
+      return res
+        .status(500)
+        .json({ error: "Well ... Something went wrong :/" });
+    }
+  }
+);
+
 // GET COURSE BY ID FOR HOME DASHBOARD PAGE (IF IT'S PUBLISHED .. IF PAYMENT METHOD SETUP .. AND THE BRAND SLUG FOR THE VIEW PAGE)
 router.get("/warnings/course/:id", async (req, res) => {
   const courseId = req.params.id;
@@ -381,14 +467,14 @@ router.get("/courses/id/content/:id", async (req, res) => {
     // Fetch the course without modules initially
     const course = await courses.findOne({
       where: { id: courseId },
+      include: [
+        {
+          model: users,
+          attributes: ["brand_slug"], // Include the brand_slug field
+        },
+      ],
       attributes: {
-        exclude: [
-          "user_id",
-          "course_slug",
-          "group_link",
-          "createdAt",
-          "updatedAt",
-        ],
+        exclude: ["user_id", "group_link", "createdAt", "updatedAt"],
       },
     });
 

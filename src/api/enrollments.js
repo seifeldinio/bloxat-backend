@@ -593,7 +593,7 @@ router.get(
         ...enrollReturn,
         totalSum,
         totalSumThisMonth: totalSumThisMonth || 0, // Ensure it's a number and default to 0 if null
-        // courseCurrency: course.currency, // Include the courseCurrency in the response
+        courseSlug: course.course_slug, // Include the courseCurrency in the response
       });
     } catch (err) {
       return res
