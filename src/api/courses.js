@@ -275,20 +275,21 @@ router.get(
         return res.status(404).json({ error: "Course not found" });
       }
 
-      // You can fetch the user_id and brand_currency here, assuming it's from a user model
+      // You can fetch the user_id, brand_currency, and brand_name here, assuming it's from a user model
       const user = await users.findByPk(courseDetails.user_id, {
-        attributes: ["user_id", "brand_currency"],
+        attributes: ["user_id", "brand_currency", "brand_name"],
       });
 
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Include user_id and brand_currency in the response
+      // Include user_id, brand_currency, and brand_name in the response
       const response = {
         ...courseDetails.toJSON(),
         user_id: user.user_id,
         brand_currency: user.brand_currency,
+        brand_name: user.brand_name, // Include brand_name in the response
       };
 
       return res.json(response);

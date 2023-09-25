@@ -174,6 +174,48 @@ router.get(
   }
 );
 
+//   [GET] GET ONLY THE BRAND LOGO AND  NAME FOR THEIR LOGIN BRANDING
+router.get(
+  "/users/brand/minimal/:brand_slug",
+  // passport.authenticate("jwt", { session: false }),
+  async (req, res) => {
+    const brand_slug = req.params.brand_slug;
+
+    try {
+      const usersReturn = await users.findOne({
+        where: { brand_slug: brand_slug },
+
+        // Don't show hash in the response
+        attributes: {
+          exclude: [
+            "hash",
+            // "createdAt",
+            "is_admin",
+            "createdAt",
+            "updatedAt",
+            "player_id_app",
+            "player_id_web",
+            "country",
+            "trial_end",
+            "brand_currency",
+            "subscription_end",
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "avatar_url",
+          ],
+        },
+      });
+
+      return res.json(usersReturn);
+    } catch (err) {
+      // Handle errors
+      return res.status(500).json({ error: "Something went wrong :/" });
+    }
+  }
+);
+
 //   [GET] GET USER BY brand_slug
 router.get(
   "/users/brand/:brand_slug",
@@ -561,41 +603,47 @@ router.get(
 );
 //
 
-//// [GET] USER'S ENROLLMENTS AND HOW MANY GOT DONE
-// Define an endpoint to get enrolled courses and check completion for all courses
-router.get("/dashboard/progress/:user_id", async (req, res) => {
-  const userId = req.params.user_id;
-
+// Define a function to count enrollments with a specific brand_slug
+const countEnrollmentsByBrandSlug = async (brandSlug) => {
   try {
-    // Retrieve the count of enrolled courses for the user
-    const enrolledCourseCount = await countEnrolledCourses(userId);
-
-    return res.json({
-      enrolledCourseCount,
+    const count = await enrollments.count({
+      where: { brand_slug: brandSlug },
     });
+    return count;
   } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-// Placeholder function to count enrolled courses for a user
-const countEnrolledCourses = async (userId) => {
-  try {
-    // Implement your logic to count enrolled courses for the user
-    // Replace this with your actual implementation
-    const userEnrollments = await enrollments.findAll({
-      where: {
-        user_id: userId,
-      },
-    });
-
-    return userEnrollments.length; // Return the count of enrollments
-  } catch (error) {
-    console.error("Error counting enrolled courses:", error);
+    console.error("Error counting enrollments:", error);
     throw error;
   }
 };
+
+//// [GET] USER'S ENROLLMENTS AND HOW MANY GOT DONE
+// Define an endpoint to get enrolled courses and check completion for all courses
+// router.get(
+//   "/dashboard/progress/:user_id/brand/:brand_slug",
+//   async (req, res) => {
+//     const userId = req.params.user_id;
+//     const brandSlug = req.params.brand_slug;
+
+//     try {
+//       // Retrieve the brand_slug for the user
+//       const user = await users.findOne({ where: { user_id: userId } });
+//       if (!user) {
+//         return res.status(404).json({ error: "User not found" });
+//       }
+
+//       // Retrieve the count of enrolled courses for the user with the specified brand_slug
+//       const enrolledCourseCount = await countEnrollmentsByBrandSlug(brandSlug);
+
+//       return res.json({
+//         enrolledCourseCount,
+//       });
+//     } catch (error) {
+//       console.error("Error:", error);
+//       return res.status(500).json({ error: "Internal server error" });
+//     }
+//   }
+// );
+
 
 // [GET] GET ALL USERS WITH COUNT AND WITH THEIR ENROLLMENTS
 router.get(
