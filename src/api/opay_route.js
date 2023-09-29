@@ -1,14 +1,14 @@
-const oPayController = require("../controllers/opay.controllers");
+// const oPayController = require("../controllers/opay.controllers");
 
-const express = require("express");
+// const express = require("express");
 
-const router = express.Router();
+// const router = express.Router();
 
-//ROUTING
-router.post("/opay-payment", oPayController.OPayPaymentFunction);
+// //ROUTING
+// router.post("/opay-payment", oPayController.OPayPaymentFunction);
 
-module.exports = router;
+// module.exports = router;
 
-// module.exports = {
-//   SendNotification,
-// };
+// // module.exports = {
+// //   SendNotification,
+// // };
