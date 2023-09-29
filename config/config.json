@@ -9,27 +9,27 @@
     "logging": true
   },
   "test": {
-    "username": "u719924187_admin",
-    "password": "dsjfklJFIJEWOFJKdjfli&34892342389&&eouo8fu832ofjoHUOISEDHEHFR(h3w8rhwse9f739haschasiu7&*#*&hiuefuwksdjfn",
-    "database": "u719924187_bloxatdb",
-    "host": "sql563.main-hosting.eu",
+    "username": "hbosqyuk3a09m115m1y0",
+    "password": "pscale_pw_b7CuLmtFTwIs289gryxG7LI91Y46QxzrFlA0rhCsVc5",
+    "database": "bloxat",
+    "host": "aws.connect.psdb.cloud",
     "port": "3306",
     "dialect": "mysql",
     "logging": false
   },
   "production": {
-    "username": "u719924187_admin",
-    "password": "dsjfklJFIJEWOFJKdjfli&34892342389&&eouo8fu832ofjoHUOISEDHEHFR(h3w8rhwse9f739haschasiu7&*#*&hiuefuwksdjfn",
-    "database": "u719924187_bloxatdb",
-    "host": "sql779.main-hosting.eu",
+    "username": "hbosqyuk3a09m115m1y0",
+    "password": "pscale_pw_b7CuLmtFTwIs289gryxG7LI91Y46QxzrFlA0rhCsVc5",
+    "database": "bloxat",
+    "host": "aws.connect.psdb.cloud",
     "port": "3306",
     "dialect": "mysql",
     "logging": false,
-    "pool": {
-      "max": 15,
-      "min": 0,
-      "idle": 10000,
-      "acquire": 30000
-    }
+    "dialectOptions": {
+      "ssl": {
+        "rejectUnauthorized": false
+      }
+    },
+    "ssl": true
   }
 }
