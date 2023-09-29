@@ -204,7 +204,7 @@ exports.getCourseCheckoutDetails = async (req, res) => {
     // Include user_id, brand_currency, and brand_name in the response
     const response = {
       ...courseDetails.toJSON(),
-      user_id: user.user_id,
+      userid: user.user_id,
       brand_currency: user.brand_currency,
       brand_name: user.brand_name, // Include brand_name in the response
     };
