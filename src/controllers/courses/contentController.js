@@ -11,7 +11,7 @@ const {
 exports.getContentForEdit = async (req, res) => {
   // Pagination
   let page = parseInt(req.query.page);
-  let per_page = parseInt(req.query.per_page || 10);
+  let per_page = parseInt(req.query.per_page || 20);
   const offset = page ? page * per_page : 0;
   const courseId = req.params.id;
 
