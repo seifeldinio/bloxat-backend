@@ -21,7 +21,6 @@ const { users, subscriptions } = require("../../../models");
 
 // SUBSCRIPTIONS
 // [POST] CREATE SUBSCRIPTION OBJECT AND UPDATE THE USER'S SUBSCRIPTION_END DATE
-
 exports.createSubscription = async (req, res) => {
   try {
     // console.log("Received request body:", req.body);
@@ -60,13 +59,14 @@ exports.createSubscription = async (req, res) => {
 
     // Update the user's subscription_end with the provided end_date
     user.subscription_end = endDate; // Assuming the field name in the user model is "subscription_end"
+    user.plan_type = plan; // "basic" or "premium"
     await user.save(); // Save the changes to the user model
 
     const subscriptionsReturn = await subscriptions.create({
       user_id: user.id,
       purchase_date: purchaseDate,
       end_date: endDate,
-      plan: plan,
+      plan: plan, // "basic" or "premium"
       amount: amount,
       payment_method: paymentMethod,
       order_id: orderId,

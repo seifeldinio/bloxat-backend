@@ -126,6 +126,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         type: DataTypes.DATE,
       },
+      plan_type: {
+        type: DataTypes.STRING, // can only be "basic" or "premium"
+        allowNull: true,
+      },
       player_id_app: {
         type: DataTypes.STRING,
         allowNull: true,

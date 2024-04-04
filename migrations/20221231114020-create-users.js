@@ -106,6 +106,10 @@ module.exports = {
         allowNull: true,
         type: DataTypes.DATE,
       },
+      plan_type: {
+        type: DataTypes.STRING, // can only be "basic" or "premium"
+        allowNull: true,
+      },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE,
