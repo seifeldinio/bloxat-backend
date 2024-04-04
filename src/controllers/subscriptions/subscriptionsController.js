@@ -62,11 +62,12 @@ exports.createSubscription = async (req, res) => {
     user.plan_type = plan; // "basic" or "premium"
     await user.save(); // Save the changes to the user model
 
+    
     const subscriptionsReturn = await subscriptions.create({
       user_id: user.id,
       purchase_date: purchaseDate,
       end_date: endDate,
-      plan: plan, // "basic" or "premium"
+      plan: plan, // "basic" or "premium"      
       amount: amount,
       payment_method: paymentMethod,
       order_id: orderId,
