@@ -111,6 +111,7 @@ async function getUserDataWithCoursesAndEnrollments(
       attributes: {
         exclude: [
           "hash",
+          // "createdAt",
           "is_admin",
           "createdAt",
           "updatedAt",
@@ -127,10 +128,6 @@ async function getUserDataWithCoursesAndEnrollments(
         ],
       },
     });
-
-    if (!userData) {
-      throw new Error("User data not found for the provided brandSlug");
-    }
 
     // Fetch user's courses and enrollments
     const coursesWithEnrollments = await courses.findAll({
@@ -176,7 +173,7 @@ async function getUserDataWithCoursesAndEnrollments(
               "currency",
               "enrolled_through",
               "status",
-            ],
+            ], // Exclude these attributes
           },
         },
       ],
@@ -204,7 +201,6 @@ async function getUserDataWithCoursesAndEnrollments(
 //       attributes: {
 //         exclude: [
 //           "hash",
-//           // "createdAt",
 //           "is_admin",
 //           "createdAt",
 //           "updatedAt",
@@ -221,6 +217,10 @@ async function getUserDataWithCoursesAndEnrollments(
 //         ],
 //       },
 //     });
+
+//     if (!userData) {
+//       throw new Error("User data not found for the provided brandSlug");
+//     }
 
 //     // Fetch user's courses and enrollments
 //     const coursesWithEnrollments = await courses.findAll({
@@ -266,7 +266,7 @@ async function getUserDataWithCoursesAndEnrollments(
 //               "currency",
 //               "enrolled_through",
 //               "status",
-//             ], // Exclude these attributes
+//             ],
 //           },
 //         },
 //       ],
