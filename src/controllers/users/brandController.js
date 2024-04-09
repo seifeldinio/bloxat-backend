@@ -111,7 +111,6 @@ async function getUserDataWithCoursesAndEnrollments(
       attributes: {
         exclude: [
           "hash",
-          // "createdAt",
           "is_admin",
           "createdAt",
           "updatedAt",
@@ -128,6 +127,10 @@ async function getUserDataWithCoursesAndEnrollments(
         ],
       },
     });
+
+    if (!userData) {
+      throw new Error("User data not found for the provided brandSlug");
+    }
 
     // Fetch user's courses and enrollments
     const coursesWithEnrollments = await courses.findAll({
@@ -173,7 +176,7 @@ async function getUserDataWithCoursesAndEnrollments(
               "currency",
               "enrolled_through",
               "status",
-            ], // Exclude these attributes
+            ],
           },
         },
       ],
@@ -186,6 +189,96 @@ async function getUserDataWithCoursesAndEnrollments(
     throw error;
   }
 }
+
+// async function getUserDataWithCoursesAndEnrollments(
+//   brandSlug,
+//   userId,
+//   search,
+//   page,
+//   perPage
+// ) {
+//   try {
+//     // Fetch user data with brand information
+//     const userData = await users.findOne({
+//       where: { brand_slug: brandSlug },
+//       attributes: {
+//         exclude: [
+//           "hash",
+//           // "createdAt",
+//           "is_admin",
+//           "createdAt",
+//           "updatedAt",
+//           "player_id_app",
+//           "player_id_web",
+//           "country",
+//           "trial_end",
+//           "subscription_end",
+//           "first_name",
+//           "last_name",
+//           "email",
+//           "phone_number",
+//           "avatar_url",
+//         ],
+//       },
+//     });
+
+//     // Fetch user's courses and enrollments
+//     const coursesWithEnrollments = await courses.findAll({
+//       attributes: {
+//         exclude: [
+//           "user_id",
+//           "introduction_video",
+//           "group_link",
+//           "updatedAt",
+//           "createdAt",
+//         ],
+//       },
+//       where: {
+//         user_id: userData.id,
+//         published: true,
+//         [Op.or]: [
+//           {
+//             title: { [Op.like]: `%${search}%` },
+//           },
+//           {
+//             description: { [Op.like]: `%${search}%` },
+//           },
+//         ],
+//       },
+//       include: [
+//         {
+//           model: enrollments,
+//           where: {
+//             user_id: userId,
+//           },
+//           required: false,
+//           attributes: {
+//             exclude: [
+//               "id",
+//               "createdAt",
+//               "updatedAt",
+//               "order_id",
+//               "transaction_id",
+//               "last_done_module_order",
+//               "last_done_lesson_order",
+//               "last_done_lesson_id",
+//               "price",
+//               "currency",
+//               "enrolled_through",
+//               "status",
+//             ], // Exclude these attributes
+//           },
+//         },
+//       ],
+//       limit: perPage,
+//       offset: page * perPage,
+//     });
+
+//     return { userData, coursesWithEnrollments };
+//   } catch (error) {
+//     throw error;
+//   }
+// }
 
 // Function to calculate progressPercentage
 async function calculateProgressPercentage(courseId, userId) {
