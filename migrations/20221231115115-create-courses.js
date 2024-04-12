@@ -15,6 +15,10 @@ module.exports = {
           return this.id;
         },
       },
+      user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
       title: {
         type: DataTypes.STRING,
         allowNull: false,
